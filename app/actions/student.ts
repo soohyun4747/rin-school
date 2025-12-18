@@ -7,7 +7,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 export async function applyToCourse(courseId: string, slotsString: string) {
   const { session, profile } = await requireSession();
   requireRole(profile.role, ["student"]);
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   const slots = slotsString
     .split(",")
@@ -47,7 +47,7 @@ export async function applyToCourse(courseId: string, slotsString: string) {
 export async function cancelApplication(applicationId: string) {
   const { profile } = await requireSession();
   requireRole(profile.role, ["student"]);
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   await supabase
     .from("applications")

@@ -7,7 +7,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 export async function addInstructorSubject(formData: FormData) {
   const { profile } = await requireSession();
   requireRole(profile.role, ["instructor"]);
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   const subject = String(formData.get("subject") ?? "").trim();
   const gradeRange = String(formData.get("grade_range") ?? "").trim();
@@ -27,7 +27,7 @@ export async function addInstructorSubject(formData: FormData) {
 export async function deleteInstructorSubject(id: string) {
   const { profile } = await requireSession();
   requireRole(profile.role, ["instructor"]);
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   await supabase.from("instructor_subjects").delete().eq("id", id).eq("instructor_id", profile.id);
   revalidatePath("/instructor/subjects");
 }
@@ -35,7 +35,7 @@ export async function deleteInstructorSubject(id: string) {
 export async function addAvailabilitySlots(formData: FormData) {
   const { profile } = await requireSession();
   requireRole(profile.role, ["instructor"]);
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   const courseId = String(formData.get("course_id") ?? "");
   const slotsString = String(formData.get("slots") ?? "");

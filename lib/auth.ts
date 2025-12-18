@@ -5,7 +5,8 @@ import type { Tables } from "@/types/database";
 export type Role = Tables<"profiles">["role"];
 
 export async function getSessionAndProfile() {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
+
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -25,9 +26,11 @@ export async function getSessionAndProfile() {
 
 export async function requireSession() {
   const { session, profile } = await getSessionAndProfile();
+
   if (!session || !profile) {
     redirect("/auth/login");
   }
+
   return { session, profile } as const;
 }
 

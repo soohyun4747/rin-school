@@ -1,31 +1,38 @@
 import { cookies, headers } from "next/headers";
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/database";
 
-export function getSupabaseServerClient() {
-  const cookieStore = cookies();
-  const requestHeaders = headers();
+export async function getSupabaseServerClient() {
+  const cookieStore = await cookies();
+  const requestHeaders = await headers();
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    // ✅ 서버 컴포넌트/서버에서만 쓸 거면 서비스 롤도 가능하지만,
+    // 일반적인 auth(세션/유저) 용도면 anon(or publishable) 키 권장입니다.
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+        getAll() {
+          return cookieStore.getAll();
         },
-        set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: "", ...options });
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {
+            // Server Component에서 setAll이 호출되면 실패할 수 있는데,
+            // Supabase Proxy(미들웨어)로 세션 갱신을 처리한다면 무시해도 됩니다.
+          }
         },
       },
-      headers: {
-        get(key: string) {
-          return requestHeaders.get(key) ?? undefined;
-        },
-      },
+      // global: {
+      //   headers: {
+      //     // supabase-js 내부 fetch에 추가로 태울 헤더가 필요하면 여기에
+      //     ...Object.fromEntries(requestHeaders.entries()),
+      //   },
+      // },
     }
   );
 }

@@ -10,7 +10,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 export default async function AdminCoursesPage() {
   const { profile } = await requireSession();
   requireRole(profile.role, ["admin"]);
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const { data: courses } = await supabase
     .from("courses")
     .select("id, title, subject, grade_range, capacity, duration_minutes, created_at")
