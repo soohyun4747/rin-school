@@ -13,6 +13,7 @@ export async function createCourse(formData: FormData) {
 
   const title = String(formData.get('title') ?? '').trim();
   const subject = String(formData.get('subject') ?? '').trim();
+  const imageUrl = String(formData.get('image_url') ?? '').trim();
   const gradeRange = String(formData.get('grade_range') ?? '').trim();
   const capacity = Number(formData.get('capacity') ?? 4);
   const duration = Number(formData.get('duration_minutes') ?? 60);
@@ -24,6 +25,7 @@ export async function createCourse(formData: FormData) {
   const { error } = await supabase.from('courses').insert({
     title,
     subject,
+    image_url: imageUrl || null,
     grade_range: gradeRange,
     capacity,
     duration_minutes: duration,

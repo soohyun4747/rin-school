@@ -46,36 +46,36 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50">
+    <div className="flex min-h-screen items-center justify-center bg-rose-50">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>회원가입</CardTitle>
-          <p className="text-sm text-slate-600">역할과 기본 정보를 입력해주세요.</p>
+          <p className="text-sm text-rose-800">역할과 기본 정보를 입력해주세요.</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="text-sm font-medium text-slate-700">이메일</label>
+              <label className="text-sm font-medium text-rose-900">이메일</label>
               <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700">비밀번호</label>
+              <label className="text-sm font-medium text-rose-900">비밀번호</label>
               <Input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required />
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700">이름</label>
+              <label className="text-sm font-medium text-rose-900">이름</label>
               <Input value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700">연락처</label>
+              <label className="text-sm font-medium text-rose-900">연락처</label>
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="선택" />
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700">역할</label>
+              <label className="text-sm font-medium text-rose-900">역할</label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full rounded-md border border-slate-200 px-3 py-2"
+                className="w-full rounded-md border border-rose-200 px-3 py-2"
               >
                 {roles.map((r) => (
                   <option key={r.value} value={r.value}>
@@ -90,8 +90,8 @@ export default function SignupPage() {
               회원가입
             </Button>
           </form>
-          <p className="mt-4 text-sm text-slate-600">
-            이미 계정이 있나요? <Link href="/auth/login" className="text-blue-700 hover:underline">로그인</Link>
+          <p className="mt-4 text-sm text-rose-800">
+            이미 계정이 있나요? <Link href="/auth/login" className="text-rose-700 hover:underline">로그인</Link>
           </p>
         </CardContent>
       </Card>

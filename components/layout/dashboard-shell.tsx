@@ -30,25 +30,25 @@ function navForRole(role: Role) {
 export function DashboardShell({ role, children }: PropsWithChildren<{ role: Role }>) {
   const menu = navForRole(role);
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-rose-50">
       <header className="border-b bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <Link href="/dashboard" className="text-lg font-semibold text-slate-900">
+          <Link href="/dashboard" className="text-lg font-semibold text-rose-900">
             린스쿨 대시보드
           </Link>
-          <form action={logout} className="flex items-center gap-3 text-sm text-slate-600">
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase">
+          <form action={logout} className="flex items-center gap-3 text-sm text-rose-700">
+            <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold uppercase">
               {role}
             </span>
-            <button type="submit" className="text-blue-600 hover:underline">
+            <button type="submit" className="text-rose-700 hover:underline">
               로그아웃
             </button>
           </form>
         </div>
-        <nav className="border-t bg-slate-100">
-          <div className="mx-auto flex max-w-6xl gap-4 px-4 py-2 text-sm font-medium text-slate-700">
+        <nav className="border-t bg-rose-100">
+          <div className="mx-auto flex max-w-6xl gap-4 px-4 py-2 text-sm font-medium text-rose-800">
             {menu.map((item) => (
-              <Link key={item.href} href={item.href} className={cn("rounded-md px-3 py-2 hover:bg-white")}> 
+              <Link key={item.href} href={item.href} className={cn("rounded-md px-3 py-2 hover:bg-rose-50")}> 
                 {item.label}
               </Link>
             ))}

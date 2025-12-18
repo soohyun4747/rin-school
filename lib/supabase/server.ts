@@ -1,10 +1,9 @@
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/database";
 
 export async function getSupabaseServerClient() {
   const cookieStore = await cookies();
-  const requestHeaders = await headers();
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -27,12 +26,6 @@ export async function getSupabaseServerClient() {
           }
         },
       },
-      // global: {
-      //   headers: {
-      //     // supabase-js 내부 fetch에 추가로 태울 헤더가 필요하면 여기에
-      //     ...Object.fromEntries(requestHeaders.entries()),
-      //   },
-      // },
     }
   );
 }
