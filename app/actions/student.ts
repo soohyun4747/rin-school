@@ -1,8 +1,9 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
-import { requireSession, requireRole } from '@/lib/auth';
-import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { revalidatePath } from "next/cache";
+import { requireSession, requireRole } from "@/lib/auth";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { runMatching } from "@/lib/matching";
 
 export async function applyToCourse(courseId: string, slotsString: string) {
 	const { session, profile } = await requireSession();
@@ -41,11 +42,22 @@ export async function applyToCourse(courseId: string, slotsString: string) {
 		capacity: 1,
 	}));
 
-	await supabase.from('availability_slots').insert(slotRows);
+  try {
+    const starts = slotRows.map((s) => new Date(s.start_at).getTime());
+    const ends = slotRows.map((s) => new Date(s.end_at).getTime());
+    const from = new Date(Math.min(...starts)).toISOString();
+    const to = new Date(Math.max(...ends)).toISOString();
 
-	revalidatePath(`/student/courses/${courseId}`);
-	revalidatePath('/student/applications');
-	return application?.id;
+    await runMatching({ courseId, from, to, requestedBy: session!.user.id });
+  } catch (error) {
+    console.error("자동 매칭 실행 실패", error);
+  }
+
+  revalidatePath(`/student/courses/${courseId}`);
+  revalidatePath("/student/applications");
+  revalidatePath(`/admin/courses/${courseId}`);
+  revalidatePath("/admin/courses");
+  return application?.id;
 }
 
 export async function cancelApplication(applicationId: string) {

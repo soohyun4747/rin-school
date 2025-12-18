@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { requireSession, requireRole } from '@/lib/auth';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { formatDateTime } from '@/lib/time';
@@ -52,46 +51,12 @@ export default async function AdminStudentsPage() {
 	});
 
 	const studentRows: StudentProfile[] = students ?? [];
-	const totalApplications = applications?.length ?? 0;
-	const pendingApplications = (applications ?? []).filter(
-		(app) => app.status === 'pending'
-	).length;
 
 	return (
 		<div className='space-y-6'>
 			<div className='space-y-1'>
 				<h1 className='text-2xl font-bold text-slate-900'>학생 관리</h1>
-				<p className='text-sm text-slate-600'>
-					학생 연락처, 신청 현황, 가능한 시간 슬롯을 한눈에
-					확인하세요.
-				</p>
-			</div>
-
-			<div className='grid gap-3 md:grid-cols-3'>
-				<Card>
-					<CardHeader>
-						<CardTitle>학생 수</CardTitle>
-					</CardHeader>
-					<CardContent className='text-2xl font-bold text-slate-900'>
-						{studentRows.length}명
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader>
-						<CardTitle>총 신청</CardTitle>
-					</CardHeader>
-					<CardContent className='text-2xl font-bold text-slate-900'>
-						{totalApplications}건
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader>
-						<CardTitle>대기 중</CardTitle>
-					</CardHeader>
-					<CardContent className='text-2xl font-bold text-[var(--primary)]'>
-						{pendingApplications}건
-					</CardContent>
-				</Card>
+				<p className='text-sm text-slate-600'>학생 연락처, 신청 현황, 가능한 시간 슬롯을 표로 확인하세요.</p>
 			</div>
 
 			<Card>
@@ -99,50 +64,39 @@ export default async function AdminStudentsPage() {
 					<CardTitle>학생 목록</CardTitle>
 				</CardHeader>
 				<CardContent className='space-y-3'>
-					{studentRows.length === 0 && (
-						<p className='text-sm text-slate-600'>
-							등록된 학생이 없습니다.
-						</p>
+					{studentRows.length === 0 && <p className='text-sm text-slate-600'>등록된 학생이 없습니다.</p>}
+					{studentRows.length > 0 && (
+						<div className='overflow-hidden rounded-lg border border-slate-200'>
+							<table className='min-w-full divide-y divide-slate-200 text-sm'>
+								<thead className='bg-slate-50'>
+									<tr>
+										<th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>학생</th>
+										<th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>연락처</th>
+										<th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>신청</th>
+										<th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>대기</th>
+										<th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>가능 슬롯</th>
+										<th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>가입일</th>
+									</tr>
+								</thead>
+								<tbody className='divide-y divide-slate-100 bg-white'>
+									{studentRows.map((student) => {
+										const stat = appMap.get(student.id) ?? { total: 0, pending: 0 };
+										const slots = availabilityCount.get(student.id) ?? 0;
+										return (
+											<tr key={student.id} className='hover:bg-slate-50'>
+												<td className='px-4 py-2 font-semibold text-slate-900'>{student.name || '이름 미입력'}</td>
+												<td className='px-4 py-2 text-slate-700'>{student.phone || '연락처 없음'}</td>
+												<td className='px-4 py-2 text-slate-700'>{stat.total}건</td>
+												<td className='px-4 py-2 text-[var(--primary)]'>{stat.pending}건</td>
+												<td className='px-4 py-2 text-slate-700'>{slots}개</td>
+												<td className='px-4 py-2 text-slate-500'>{formatDateTime(new Date(student.created_at))}</td>
+											</tr>
+										);
+									})}
+								</tbody>
+							</table>
+						</div>
 					)}
-					<div className='space-y-2'>
-						{studentRows.map((student) => {
-							const stat = appMap.get(student.id) ?? {
-								total: 0,
-								pending: 0,
-							};
-							const slots =
-								availabilityCount.get(student.id) ?? 0;
-							return (
-								<div
-									key={student.id}
-									className='flex flex-col gap-2 rounded-md border border-slate-200 bg-white px-4 py-3 shadow-sm md:flex-row md:items-center md:justify-between'>
-									<div>
-										<p className='text-sm font-semibold text-slate-900'>
-											{student.name || '이름 미입력'}
-										</p>
-										<p className='text-xs text-slate-600'>
-											가입일{' '}
-											{formatDateTime(
-												new Date(student.created_at)
-											)}
-										</p>
-									</div>
-									<div className='flex flex-wrap items-center gap-2 text-xs'>
-										<Badge>
-											{student.phone || '연락처 없음'}
-										</Badge>
-										<Badge>신청 {stat.total}건</Badge>
-										{stat.pending > 0 && (
-											<Badge variant='success'>
-												대기 {stat.pending}건
-											</Badge>
-										)}
-										<Badge>가능 슬롯 {slots}개</Badge>
-									</div>
-								</div>
-							);
-						})}
-					</div>
 				</CardContent>
 			</Card>
 		</div>

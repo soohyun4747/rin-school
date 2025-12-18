@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireSession, requireRole } from "@/lib/auth";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { buildSlotsFromDayTimeRanges } from "@/lib/time";
+import { runMatching } from "@/lib/matching";
 
 export async function addInstructorSubject(formData: FormData) {
   const { profile } = await requireSession();
@@ -39,8 +41,22 @@ export async function addAvailabilitySlots(formData: FormData) {
 
   const courseId = String(formData.get("course_id") ?? "");
   const slotsString = String(formData.get("slots") ?? "");
+  const availabilityRaw = String(formData.get("availability_json") ?? "[]");
   const startAt = String(formData.get("start_at") ?? "");
   const endAt = String(formData.get("end_at") ?? "");
+
+  if (!courseId) {
+    throw new Error("수업을 선택해주세요.");
+  }
+
+  let availabilityRanges: { day_of_week: number; start_time: string; end_time: string }[] = [];
+  try {
+    availabilityRanges = JSON.parse(availabilityRaw);
+  } catch (error) {
+    console.error("availability parse error", error);
+  }
+
+  const slotsFromRanges = buildSlotsFromDayTimeRanges(availabilityRanges);
 
   const slotsFromSelector = slotsString
     .split(",")
@@ -51,27 +67,23 @@ export async function addAvailabilitySlots(formData: FormData) {
       return { start, end };
     });
 
-  const slotsFromRange: { start: string; end: string }[] = [];
+  const slotsFromRangeInput: { start: string; end: string }[] = [];
   if (!slotsString && startAt && endAt) {
     const start = new Date(startAt);
     const end = new Date(endAt);
-    let cursor = new Date(start);
-    while (cursor.getTime() + 60 * 60 * 1000 <= end.getTime()) {
-      const slotStart = new Date(cursor);
-      const slotEnd = new Date(cursor.getTime() + 60 * 60 * 1000);
-      slotsFromRange.push({ start: slotStart.toISOString(), end: slotEnd.toISOString() });
-      cursor = new Date(cursor.getTime() + 60 * 60 * 1000);
+    if (start < end) {
+      slotsFromRangeInput.push({ start: start.toISOString(), end: end.toISOString() });
     }
   }
 
-  const slots = [...slotsFromSelector, ...slotsFromRange];
+  const slots = [...slotsFromRanges, ...slotsFromSelector, ...slotsFromRangeInput];
 
   if (slots.length === 0) {
-    throw new Error("슬롯을 선택해주세요.");
+    throw new Error("가능 시간을 1개 이상 입력해주세요.");
   }
 
   const payload = slots.map((slot) => ({
-    course_id: courseId || null,
+    course_id: courseId,
     user_id: profile.id,
     role: "instructor" as const,
     start_at: slot.start,
@@ -80,5 +92,19 @@ export async function addAvailabilitySlots(formData: FormData) {
   }));
 
   await supabase.from("availability_slots").insert(payload);
+
+  try {
+    const starts = payload.map((p) => new Date(p.start_at).getTime());
+    const ends = payload.map((p) => new Date(p.end_at).getTime());
+    const from = new Date(Math.min(...starts)).toISOString();
+    const to = new Date(Math.max(...ends)).toISOString();
+
+    await runMatching({ courseId, from, to, requestedBy: profile.id });
+  } catch (error) {
+    console.error("강사 자동 매칭 실패", error);
+  }
+
   revalidatePath("/instructor/availability");
+  revalidatePath(`/admin/courses/${courseId}`);
+  revalidatePath("/admin/courses");
 }

@@ -260,7 +260,8 @@ export async function runMatchingAction(
 			requestedBy: session!.user.id,
 		});
 
-		revalidatePath('/admin/matching');
+		revalidatePath('/admin/courses');
+		revalidatePath(`/admin/courses/${courseId}`);
 		return {
 			success: `매칭 완료: ${result.matchedCount}명 매칭, ${result.unmatchedCount}명 대기`,
 		};
@@ -292,8 +293,149 @@ export async function sendEmailBatch(formData: FormData) {
 		.update({ status: 'done' })
 		.eq('id', batch?.id);
 
-	revalidatePath('/admin/matching');
+	revalidatePath('/admin/courses');
 	return batch?.id;
+}
+
+export async function updateMatchSlot(courseId: string, matchId: string, formData: FormData) {
+	const { profile } = await requireSession();
+	requireRole(profile.role, ['admin']);
+	const supabase = await getSupabaseServerClient();
+
+	const slotId = String(formData.get('slot_id') ?? '');
+	const status = String(formData.get('status') ?? 'confirmed');
+
+	if (!slotId) {
+		throw new Error('슬롯을 선택해주세요.');
+	}
+
+	const { data: slot } = await supabase
+		.from('availability_slots')
+		.select('id, user_id, start_at, end_at, capacity')
+		.eq('id', slotId)
+		.eq('course_id', courseId)
+		.single();
+
+	if (!slot) {
+		throw new Error('선택한 시간 슬롯을 찾을 수 없습니다.');
+	}
+
+	const { count } = await supabase
+		.from('match_students')
+		.select('student_id', { count: 'exact', head: true })
+		.eq('match_id', matchId);
+
+	const capacity = slot.capacity ?? 1;
+	if (typeof count === 'number' && count > capacity) {
+		throw new Error('선택한 시간의 정원을 초과합니다.');
+	}
+
+	await supabase
+		.from('matches')
+		.update({
+			instructor_id: slot.user_id,
+			slot_start_at: slot.start_at,
+			slot_end_at: slot.end_at,
+			status,
+			updated_by: profile.id,
+		})
+		.eq('id', matchId)
+		.eq('course_id', courseId);
+
+	revalidatePath(`/admin/courses/${courseId}`);
+	revalidatePath('/admin/courses');
+}
+
+export async function assignStudentToSlot(courseId: string, formData: FormData) {
+	const { profile } = await requireSession();
+	requireRole(profile.role, ['admin']);
+	const supabase = await getSupabaseServerClient();
+
+	const studentId = String(formData.get('student_id') ?? '');
+	const slotId = String(formData.get('slot_id') ?? '');
+
+	if (!studentId || !slotId) {
+		throw new Error('학생과 시간을 모두 선택해주세요.');
+	}
+
+	const { data: slot } = await supabase
+		.from('availability_slots')
+		.select('id, user_id, start_at, end_at, capacity')
+		.eq('id', slotId)
+		.eq('course_id', courseId)
+		.single();
+
+	if (!slot) {
+		throw new Error('선택한 시간 슬롯을 찾을 수 없습니다.');
+	}
+
+	const { data: match } = await supabase
+		.from('matches')
+		.upsert(
+			{
+				course_id: courseId,
+				slot_start_at: slot.start_at,
+				slot_end_at: slot.end_at,
+				instructor_id: slot.user_id,
+				status: 'confirmed',
+				updated_by: profile.id,
+			},
+			{ onConflict: 'course_id,slot_start_at,instructor_id' }
+		)
+		.select('id')
+		.single();
+
+	if (!match?.id) {
+		throw new Error('매칭을 생성하지 못했습니다.');
+	}
+
+	const { count } = await supabase
+		.from('match_students')
+		.select('student_id', { count: 'exact', head: true })
+		.eq('match_id', match.id);
+
+	const capacity = slot.capacity ?? 1;
+	if (typeof count === 'number' && count >= capacity) {
+		throw new Error('선택한 시간의 정원이 가득 찼습니다.');
+	}
+
+	await supabase
+		.from('match_students')
+		.upsert({ match_id: match.id, student_id: studentId }, { onConflict: 'match_id,student_id' });
+
+	await supabase
+		.from('applications')
+		.update({ status: 'matched' })
+		.eq('course_id', courseId)
+		.eq('student_id', studentId);
+
+	revalidatePath(`/admin/courses/${courseId}`);
+	revalidatePath('/admin/courses');
+}
+
+export async function removeStudentFromMatch(
+	courseId: string,
+	matchId: string,
+	studentId: string
+) {
+	const { profile } = await requireSession();
+	requireRole(profile.role, ['admin']);
+	const supabase = await getSupabaseServerClient();
+
+	await supabase
+		.from('match_students')
+		.delete()
+		.eq('match_id', matchId)
+		.eq('student_id', studentId);
+
+	await supabase
+		.from('applications')
+		.update({ status: 'pending' })
+		.eq('course_id', courseId)
+		.eq('student_id', studentId);
+
+	revalidatePath(`/admin/courses/${courseId}`);
+	revalidatePath('/admin/courses');
 }
 
 export async function redirectToDashboard() {
