@@ -36,20 +36,22 @@ export interface Database {
           id: string;
           title: string;
           subject: string;
+          image_url: string | null;
           grade_range: string;
           duration_minutes: number;
           capacity: number;
-          created_by: string;
+          created_by: string | null;
           created_at: string;
         };
         Insert: {
           id?: string;
           title: string;
           subject: string;
+          image_url?: string | null;
           grade_range: string;
           duration_minutes?: number;
           capacity?: number;
-          created_by: string;
+          created_by?: string | null;
           created_at?: string;
         };
         Update: Partial<Omit<Database["public"]["Tables"]["courses"]["Row"], "id" | "created_by" | "created_at">>;

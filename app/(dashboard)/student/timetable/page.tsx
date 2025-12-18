@@ -6,7 +6,7 @@ import { formatDateTime } from "@/lib/time";
 export default async function StudentTimetablePage() {
   const { profile } = await requireSession();
   requireRole(profile.role, ["student"]);
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   const { data: rows } = await supabase
     .from("match_students")
@@ -44,13 +44,13 @@ export default async function StudentTimetablePage() {
           <CardTitle>확정된 시간표</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
-          {matchRows.length === 0 && <p className="text-slate-600">아직 확정된 매칭이 없습니다.</p>}
+          {matchRows.length === 0 && <p className="text-rose-700">아직 확정된 매칭이 없습니다.</p>}
           {matchRows.map((row) => (
-            <div key={row.id} className="rounded-md border border-slate-200 px-4 py-3">
-              <p className="text-sm font-semibold text-slate-900">{row.match?.courses?.title ?? "수업"}</p>
-              <p className="text-xs text-slate-600">{formatDateTime(new Date(row.match?.slot_start_at))}</p>
-              <p className="text-xs text-slate-700">강사: {instructorMap.get(row.match?.instructor_id) ?? row.match?.instructor_id}</p>
-              <p className="text-xs text-slate-500">상태: {row.match?.status}</p>
+            <div key={row.id} className="rounded-md border border-rose-200 px-4 py-3">
+              <p className="text-sm font-semibold text-rose-900">{row.match?.courses?.title ?? "수업"}</p>
+              <p className="text-xs text-rose-700">{formatDateTime(new Date(row.match?.slot_start_at))}</p>
+              <p className="text-xs text-rose-800">강사: {instructorMap.get(row.match?.instructor_id) ?? row.match?.instructor_id}</p>
+              <p className="text-xs text-rose-600">상태: {row.match?.status}</p>
             </div>
           ))}
         </CardContent>

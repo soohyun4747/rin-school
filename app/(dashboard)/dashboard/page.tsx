@@ -25,8 +25,8 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">안녕하세요, {profile.name || "사용자"}님</h1>
-        <p className="text-sm text-slate-600">역할: {profile.role}</p>
+        <h1 className="text-2xl font-bold text-rose-900">안녕하세요, {profile.name || "사용자"}님</h1>
+        <p className="text-sm text-rose-800">역할: {profile.role}</p>
       </div>
 
       <Card>
@@ -38,7 +38,7 @@ export default async function DashboardPage() {
             <Link
               key={shortcut.href}
               href={shortcut.href}
-              className="rounded-md border border-slate-200 px-4 py-3 text-sm font-semibold text-blue-700 hover:bg-blue-50"
+              className="rounded-md border border-rose-200 px-4 py-3 text-sm font-semibold text-rose-800 hover:bg-rose-50"
             >
               {shortcut.label}
             </Link>
@@ -50,7 +50,7 @@ export default async function DashboardPage() {
         <CardHeader>
           <CardTitle>가이드</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-slate-700">
+        <CardContent className="space-y-2 text-sm text-rose-800">
           {profile.role === "admin" && (
             <ul className="list-disc space-y-1 pl-5">
               <li>수업을 등록하고 요일/시간 범위를 설정하세요.</li>

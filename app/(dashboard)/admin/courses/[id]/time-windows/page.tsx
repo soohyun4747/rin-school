@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,10 +23,10 @@ export default async function CourseTimeWindowsPage({ params }: { params: { id: 
   const { profile } = await requireSession();
   requireRole(profile.role, ["admin"]);
 
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const { data: course } = await supabase
     .from("courses")
-    .select("id, title, subject, grade_range")
+    .select("id, title, subject, grade_range, image_url")
     .eq("id", params.id)
     .single();
 
@@ -44,13 +45,18 @@ export default async function CourseTimeWindowsPage({ params }: { params: { id: 
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-slate-500">{course.subject} · {course.grade_range}</p>
-          <h1 className="text-xl font-semibold text-slate-900">{course.title} 가능 시간 범위</h1>
+          <p className="text-sm text-rose-700">{course.subject} · {course.grade_range}</p>
+          <h1 className="text-xl font-semibold text-rose-900">{course.title} 가능 시간 범위</h1>
         </div>
-        <Link href="/admin/courses" className="text-blue-700 hover:underline">
+        <Link href="/admin/courses" className="text-rose-700 hover:underline">
           뒤로가기
         </Link>
       </div>
+      {course.image_url && (
+        <div className="relative h-48 overflow-hidden rounded-lg border border-rose-200 bg-white">
+          <Image src={course.image_url} alt={`${course.title} 이미지`} fill className="object-cover" />
+        </div>
+      )}
 
       <Card>
         <CardHeader>
@@ -59,7 +65,7 @@ export default async function CourseTimeWindowsPage({ params }: { params: { id: 
         <CardContent>
           <form action={createTimeWindow.bind(null, course.id)} className="grid grid-cols-1 gap-3 md:grid-cols-4">
             <div>
-              <label className="text-sm font-medium text-slate-700">요일</label>
+              <label className="text-sm font-medium text-rose-900">요일</label>
               <Select name="day_of_week" required defaultValue="1">
                 {days.map((label, idx) => (
                   <option key={label} value={idx}>
@@ -69,11 +75,11 @@ export default async function CourseTimeWindowsPage({ params }: { params: { id: 
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700">시작 시간</label>
+              <label className="text-sm font-medium text-rose-900">시작 시간</label>
               <Input name="start_time" type="time" required />
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700">종료 시간</label>
+              <label className="text-sm font-medium text-rose-900">종료 시간</label>
               <Input name="end_time" type="time" required />
             </div>
             <div className="flex items-end">
@@ -88,13 +94,13 @@ export default async function CourseTimeWindowsPage({ params }: { params: { id: 
           <CardTitle>등록된 시간</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
-          {(windows ?? []).length === 0 && <p className="text-slate-600">등록된 시간이 없습니다.</p>}
+          {(windows ?? []).length === 0 && <p className="text-rose-700">등록된 시간이 없습니다.</p>}
           <div className="grid gap-2 md:grid-cols-2">
             {windows?.map((w) => (
-              <div key={w.id} className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-4 py-3">
+              <div key={w.id} className="flex items-center justify-between rounded-md border border-rose-200 bg-white px-4 py-3">
                 <div>
-                  <p className="font-semibold text-slate-800">{days[w.day_of_week]}</p>
-                  <p className="text-slate-600">
+                  <p className="font-semibold text-rose-900">{days[w.day_of_week]}</p>
+                  <p className="text-rose-700">
                     {w.start_time} - {w.end_time}
                   </p>
                 </div>

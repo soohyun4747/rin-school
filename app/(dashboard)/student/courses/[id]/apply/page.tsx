@@ -10,7 +10,7 @@ import { applyToCourse } from "@/app/actions/student";
 export default async function StudentApplyPage({ params }: { params: { id: string } }) {
   const { profile } = await requireSession();
   requireRole(profile.role, ["student"]);
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   const { data: course } = await supabase
     .from("courses")
@@ -41,8 +41,8 @@ export default async function StudentApplyPage({ params }: { params: { id: strin
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900">{course.title} 신청</h1>
-        <p className="text-sm text-slate-600">{course.subject} · {course.grade_range}</p>
+        <h1 className="text-xl font-semibold text-rose-900">{course.title} 신청</h1>
+        <p className="text-sm text-rose-700">{course.subject} · {course.grade_range}</p>
       </div>
 
       <Card>
@@ -52,7 +52,7 @@ export default async function StudentApplyPage({ params }: { params: { id: strin
         <CardContent className="space-y-4">
           <form action={action} className="space-y-3">
             <SlotSelector availableSlots={availableSlots} />
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-rose-700">
               * course_time_windows 범위 내 다가오는 2주 동안의 슬롯이 생성됩니다.
             </p>
             <Button type="submit">신청 제출</Button>

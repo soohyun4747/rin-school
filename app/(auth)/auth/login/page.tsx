@@ -27,20 +27,20 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50">
+    <div className="flex min-h-screen items-center justify-center bg-rose-50">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>로그인</CardTitle>
-          <p className="text-sm text-slate-600">린스쿨 계정으로 로그인하세요.</p>
+          <p className="text-sm text-rose-800">린스쿨 계정으로 로그인하세요.</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="text-sm font-medium text-slate-700">이메일</label>
+              <label className="text-sm font-medium text-rose-900">이메일</label>
               <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700">비밀번호</label>
+              <label className="text-sm font-medium text-rose-900">비밀번호</label>
               <Input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required />
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
@@ -48,8 +48,8 @@ export default function LoginPage() {
               로그인
             </Button>
           </form>
-          <p className="mt-4 text-sm text-slate-600">
-            계정이 없나요? <Link href="/auth/signup" className="text-blue-700 hover:underline">회원가입</Link>
+          <p className="mt-4 text-sm text-rose-800">
+            계정이 없나요? <Link href="/auth/signup" className="text-rose-700 hover:underline">회원가입</Link>
           </p>
         </CardContent>
       </Card>

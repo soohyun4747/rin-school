@@ -8,7 +8,7 @@ import { formatDateTime } from "@/lib/time";
 export default async function StudentApplicationsPage() {
   const { profile } = await requireSession();
   requireRole(profile.role, ["student"]);
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   const { data: apps } = await supabase
     .from("applications")
@@ -23,13 +23,13 @@ export default async function StudentApplicationsPage() {
           <CardTitle>신청 목록</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
-          {(apps ?? []).length === 0 && <p className="text-slate-600">신청 내역이 없습니다.</p>}
+          {(apps ?? []).length === 0 && <p className="text-rose-700">신청 내역이 없습니다.</p>}
           {apps?.map((app) => (
-            <div key={app.id} className="flex items-center justify-between rounded-md border border-slate-200 px-4 py-3">
+            <div key={app.id} className="flex items-center justify-between rounded-md border border-rose-200 px-4 py-3">
               <div>
-                <p className="font-semibold text-slate-900">{app.course?.title ?? "수업"}</p>
-                <p className="text-xs text-slate-600">{formatDateTime(new Date(app.created_at))}</p>
-                <p className="text-xs text-slate-700">상태: {app.status}</p>
+                <p className="font-semibold text-rose-900">{app.course?.title ?? "수업"}</p>
+                <p className="text-xs text-rose-700">{formatDateTime(new Date(app.created_at))}</p>
+                <p className="text-xs text-rose-800">상태: {app.status}</p>
               </div>
               {app.status === "pending" && (
                 <form action={cancelApplication.bind(null, app.id)}>

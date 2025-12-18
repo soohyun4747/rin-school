@@ -13,6 +13,7 @@ create table if not exists courses (
   id uuid primary key default uuid_generate_v4(),
   title text not null,
   subject text not null,
+  image_url text,
   grade_range text not null,
   duration_minutes int not null default 60,
   capacity int not null default 4,
