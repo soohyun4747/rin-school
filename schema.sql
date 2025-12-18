@@ -16,6 +16,7 @@ create table if not exists courses (
   grade_range text not null,
   duration_minutes int not null default 60,
   capacity int not null default 4,
+  image_url text,
   created_by uuid references profiles(id),
   created_at timestamptz not null default now()
 );

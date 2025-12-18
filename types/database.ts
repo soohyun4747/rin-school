@@ -39,6 +39,7 @@ export interface Database {
           grade_range: string;
           duration_minutes: number;
           capacity: number;
+          image_url: string | null;
           created_by: string;
           created_at: string;
         };
@@ -49,6 +50,7 @@ export interface Database {
           grade_range: string;
           duration_minutes?: number;
           capacity?: number;
+          image_url?: string | null;
           created_by: string;
           created_at?: string;
         };

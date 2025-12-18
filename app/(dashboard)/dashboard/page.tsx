@@ -35,10 +35,10 @@ export default async function DashboardPage() {
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-3 md:grid-cols-3">
           {shortcuts[profile.role].map((shortcut) => (
-            <Link
+              <Link
               key={shortcut.href}
               href={shortcut.href}
-              className="rounded-md border border-slate-200 px-4 py-3 text-sm font-semibold text-blue-700 hover:bg-blue-50"
+              className="rounded-md border border-slate-200 px-4 py-3 text-sm font-semibold text-[var(--primary)] hover:bg-[var(--primary-soft)]"
             >
               {shortcut.label}
             </Link>

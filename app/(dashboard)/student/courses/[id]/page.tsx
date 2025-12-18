@@ -9,11 +9,11 @@ const days = ["일", "월", "화", "수", "목", "금", "토"];
 export default async function StudentCourseDetail({ params }: { params: { id: string } }) {
   const { profile } = await requireSession();
   requireRole(profile.role, ["student"]);
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   const { data: course } = await supabase
     .from("courses")
-    .select("id, title, subject, grade_range, duration_minutes, capacity")
+    .select("id, title, subject, grade_range, duration_minutes, capacity, image_url")
     .eq("id", params.id)
     .single();
 
@@ -27,6 +27,17 @@ export default async function StudentCourseDetail({ params }: { params: { id: st
 
   return (
     <div className="space-y-4">
+      <div className="overflow-hidden rounded-lg border border-[var(--primary-border)] bg-[var(--primary-soft)]">
+        {course.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={course.image_url} alt={`${course.title} 이미지`} className="h-64 w-full object-cover" />
+        ) : (
+          <div className="flex h-64 items-center justify-center text-sm font-semibold text-[var(--primary)]">
+            대표 이미지가 아직 등록되지 않았어요
+          </div>
+        )}
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-slate-900">{course.title}</h1>
@@ -34,7 +45,10 @@ export default async function StudentCourseDetail({ params }: { params: { id: st
             {course.subject} · {course.grade_range} · {course.duration_minutes}분 · 정원 {course.capacity}
           </p>
         </div>
-        <Link href={`/student/courses/${course.id}/apply`} className="text-blue-700 hover:underline">
+        <Link
+          href={`/student/courses/${course.id}/apply`}
+          className="text-[var(--primary)] hover:underline"
+        >
           신청하기
         </Link>
       </div>

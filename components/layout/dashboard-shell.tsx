@@ -33,14 +33,14 @@ export function DashboardShell({ role, children }: PropsWithChildren<{ role: Rol
     <div className="min-h-screen bg-slate-50">
       <header className="border-b bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <Link href="/dashboard" className="text-lg font-semibold text-slate-900">
+          <Link href="/dashboard" className="text-lg font-semibold text-[var(--primary)]">
             린스쿨 대시보드
           </Link>
           <form action={logout} className="flex items-center gap-3 text-sm text-slate-600">
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase">
               {role}
             </span>
-            <button type="submit" className="text-blue-600 hover:underline">
+            <button type="submit" className="text-[var(--primary)] hover:underline">
               로그아웃
             </button>
           </form>

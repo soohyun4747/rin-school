@@ -8,7 +8,7 @@ import { formatDateTime } from "@/lib/time";
 export default async function StudentApplicationsPage() {
   const { profile } = await requireSession();
   requireRole(profile.role, ["student"]);
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   const { data: apps } = await supabase
     .from("applications")

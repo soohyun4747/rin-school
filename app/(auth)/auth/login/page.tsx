@@ -49,7 +49,10 @@ export default function LoginPage() {
             </Button>
           </form>
           <p className="mt-4 text-sm text-slate-600">
-            계정이 없나요? <Link href="/auth/signup" className="text-blue-700 hover:underline">회원가입</Link>
+            계정이 없나요?{" "}
+            <Link href="/auth/signup" className="text-[var(--primary)] hover:underline">
+              회원가입
+            </Link>
           </p>
         </CardContent>
       </Card>

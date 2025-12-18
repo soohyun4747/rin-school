@@ -91,7 +91,10 @@ export default function SignupPage() {
             </Button>
           </form>
           <p className="mt-4 text-sm text-slate-600">
-            이미 계정이 있나요? <Link href="/auth/login" className="text-blue-700 hover:underline">로그인</Link>
+            이미 계정이 있나요?{" "}
+            <Link href="/auth/login" className="text-[var(--primary)] hover:underline">
+              로그인
+            </Link>
           </p>
         </CardContent>
       </Card>

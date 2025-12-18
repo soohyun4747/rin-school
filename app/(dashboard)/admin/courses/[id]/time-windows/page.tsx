@@ -22,7 +22,7 @@ export default async function CourseTimeWindowsPage({ params }: { params: { id: 
   const { profile } = await requireSession();
   requireRole(profile.role, ["admin"]);
 
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const { data: course } = await supabase
     .from("courses")
     .select("id, title, subject, grade_range")
@@ -47,7 +47,7 @@ export default async function CourseTimeWindowsPage({ params }: { params: { id: 
           <p className="text-sm text-slate-500">{course.subject} · {course.grade_range}</p>
           <h1 className="text-xl font-semibold text-slate-900">{course.title} 가능 시간 범위</h1>
         </div>
-        <Link href="/admin/courses" className="text-blue-700 hover:underline">
+        <Link href="/admin/courses" className="text-[var(--primary)] hover:underline">
           뒤로가기
         </Link>
       </div>

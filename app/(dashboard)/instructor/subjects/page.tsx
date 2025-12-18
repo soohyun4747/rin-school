@@ -8,7 +8,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 export default async function InstructorSubjectsPage() {
   const { profile } = await requireSession();
   requireRole(profile.role, ["instructor"]);
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   const { data: subjects } = await supabase
     .from("instructor_subjects")

@@ -3,6 +3,11 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --primary: #2a452a;
+  --primary-strong: #223621;
+  --primary-soft: #e8f0e8;
+  --primary-border: #c7d5c7;
+  --primary-focus: #3c5a3c;
 }
 
 @theme inline {
@@ -20,7 +25,7 @@
 }
 
 body {
-  background: #f8fafc;
+  background: #f5f7f5;
   color: #0f172a;
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 }

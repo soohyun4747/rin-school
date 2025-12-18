@@ -10,11 +10,11 @@ import { applyToCourse } from "@/app/actions/student";
 export default async function StudentApplyPage({ params }: { params: { id: string } }) {
   const { profile } = await requireSession();
   requireRole(profile.role, ["student"]);
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   const { data: course } = await supabase
     .from("courses")
-    .select("id, title, subject, grade_range, duration_minutes")
+    .select("id, title, subject, grade_range, duration_minutes, image_url")
     .eq("id", params.id)
     .single();
 
@@ -40,6 +40,17 @@ export default async function StudentApplyPage({ params }: { params: { id: strin
 
   return (
     <div className="space-y-4">
+      <div className="overflow-hidden rounded-lg border border-[var(--primary-border)] bg-[var(--primary-soft)]">
+        {course.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={course.image_url} alt={`${course.title} 이미지`} className="h-56 w-full object-cover" />
+        ) : (
+          <div className="flex h-56 items-center justify-center text-sm font-semibold text-[var(--primary)]">
+            대표 이미지가 등록되면 이곳에 표시됩니다
+          </div>
+        )}
+      </div>
+
       <div>
         <h1 className="text-xl font-semibold text-slate-900">{course.title} 신청</h1>
         <p className="text-sm text-slate-600">{course.subject} · {course.grade_range}</p>

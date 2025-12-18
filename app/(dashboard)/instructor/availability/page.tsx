@@ -9,7 +9,7 @@ import { formatDateTime } from "@/lib/time";
 export default async function InstructorAvailabilityPage() {
   const { profile } = await requireSession();
   requireRole(profile.role, ["instructor"]);
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   const { data: slots } = await supabase
     .from("availability_slots")
@@ -67,7 +67,9 @@ export default async function InstructorAvailabilityPage() {
             <div key={slot.id} className="rounded-md border border-slate-200 px-4 py-3">
               <p className="text-sm font-semibold text-slate-900">{formatDateTime(new Date(slot.start_at))}</p>
               <p className="text-xs text-slate-600">~ {formatDateTime(new Date(slot.end_at))}</p>
-              {slot.course_id && <p className="text-xs text-blue-700">수업 ID: {slot.course_id}</p>}
+              {slot.course_id && (
+                <p className="text-xs text-[var(--primary)]">수업 ID: {slot.course_id}</p>
+              )}
             </div>
           ))}
         </CardContent>

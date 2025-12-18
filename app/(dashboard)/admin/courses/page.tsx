@@ -13,7 +13,7 @@ export default async function AdminCoursesPage() {
   const supabase = await getSupabaseServerClient();
   const { data: courses } = await supabase
     .from("courses")
-    .select("id, title, subject, grade_range, capacity, duration_minutes, created_at")
+    .select("id, title, subject, grade_range, capacity, duration_minutes, created_at, image_url")
     .order("created_at", { ascending: false });
 
   return (
@@ -23,7 +23,11 @@ export default async function AdminCoursesPage() {
           <CardTitle>수업 등록</CardTitle>
         </CardHeader>
         <CardContent>
-          <form action={createCourse} className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <form
+            action={createCourse}
+            className="grid grid-cols-1 gap-3 md:grid-cols-2"
+            encType="multipart/form-data"
+          >
             <div>
               <label className="text-sm font-medium text-slate-700">수업명</label>
               <Input name="title" placeholder="예: 중등 수학 심화" required />
@@ -47,6 +51,11 @@ export default async function AdminCoursesPage() {
                 <option value="90">90분</option>
               </Select>
             </div>
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium text-slate-700">대표 이미지 (선택)</label>
+              <Input name="image" type="file" accept="image/*" />
+              <p className="mt-1 text-xs text-slate-500">수업 소개에 사용됩니다. (JPG, PNG 등 이미지 파일)</p>
+            </div>
             <div className="flex items-end">
               <Button type="submit">등록</Button>
             </div>
@@ -62,24 +71,38 @@ export default async function AdminCoursesPage() {
           {(courses ?? []).length === 0 && <p className="text-sm text-slate-600">등록된 수업이 없습니다.</p>}
           <div className="grid gap-3 md:grid-cols-2">
             {courses?.map((course) => (
-              <div key={course.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-base font-semibold text-slate-900">{course.title}</h3>
-                    <p className="text-sm text-slate-600">
-                      {course.subject} · {course.grade_range} · {course.duration_minutes}분 · 정원 {course.capacity}
-                    </p>
+              <div key={course.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+                <div className="flex gap-3">
+                  <div className="h-24 w-24 overflow-hidden rounded-md bg-[var(--primary-soft)] border border-[var(--primary-border)]">
+                    {course.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={course.image_url} alt={`${course.title} 이미지`} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-[var(--primary)]">
+                        이미지 없음
+                      </div>
+                    )}
                   </div>
-                  <form action={deleteCourse.bind(null, course.id)}>
-                    <Button variant="ghost" className="text-red-600" type="submit">
-                      삭제
-                    </Button>
-                  </form>
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h3 className="text-base font-semibold text-slate-900">{course.title}</h3>
+                        <p className="text-sm text-slate-600">
+                          {course.subject} · {course.grade_range} · {course.duration_minutes}분 · 정원 {course.capacity}
+                        </p>
+                      </div>
+                      <form action={deleteCourse.bind(null, course.id)}>
+                        <Button variant="ghost" className="text-red-600" type="submit">
+                          삭제
+                        </Button>
+                      </form>
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-3 flex gap-2 text-sm">
+                <div className="flex gap-2 text-sm">
                   <Link
                     href={`/admin/courses/${course.id}/time-windows`}
-                    className="rounded-md border border-blue-200 px-3 py-2 text-blue-700 hover:bg-blue-50"
+                    className="rounded-md border border-[var(--primary-border)] px-3 py-2 text-[var(--primary)] hover:bg-[var(--primary-soft)]"
                   >
                     가능 시간 설정
                   </Link>

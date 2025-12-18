@@ -6,7 +6,7 @@ import { formatDateTime } from "@/lib/time";
 export default async function InstructorTimetablePage() {
   const { profile } = await requireSession();
   requireRole(profile.role, ["instructor"]);
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   const { data: matches } = await supabase
     .from("matches")

@@ -16,9 +16,37 @@ export async function createCourse(formData: FormData) {
   const gradeRange = String(formData.get('grade_range') ?? '').trim();
   const capacity = Number(formData.get('capacity') ?? 4);
   const duration = Number(formData.get('duration_minutes') ?? 60);
+  const imageFile = formData.get('image');
+  let imageUrl: string | null = null;
 
   if (!title || !subject || !gradeRange) {
     throw new Error('필수 항목을 모두 입력해주세요.');
+  }
+
+  if (imageFile instanceof File && imageFile.size > 0) {
+    if (imageFile.type && !imageFile.type.startsWith('image/')) {
+      throw new Error('이미지 파일만 업로드할 수 있습니다.');
+    }
+
+    const extension = imageFile.name.split('.').pop() || 'png';
+    const fileName = `${crypto.randomUUID?.() ?? Date.now().toString()}.${extension}`;
+    const filePath = `courses/${session.user.id}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('course-images')
+      .upload(filePath, imageFile, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: imageFile.type || undefined,
+      });
+
+    if (uploadError) {
+      console.error('course image upload error:', uploadError);
+      throw new Error('이미지 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    }
+
+    const { data } = supabase.storage.from('course-images').getPublicUrl(filePath);
+    imageUrl = data.publicUrl;
   }
 
   const { error } = await supabase.from('courses').insert({
@@ -27,6 +55,7 @@ export async function createCourse(formData: FormData) {
     grade_range: gradeRange,
     capacity,
     duration_minutes: duration,
+    image_url: imageUrl,
     created_by: session.user.id, // (권장: 아래 참고)
   });
 
