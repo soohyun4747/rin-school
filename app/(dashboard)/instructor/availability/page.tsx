@@ -30,9 +30,9 @@ export default async function InstructorAvailabilityPage() {
         <CardContent className="space-y-4">
           <form action={addAvailabilitySlots} className="space-y-3">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <div>
+              <div className="flex items-center gap-3">
                 <label className="text-sm font-medium text-slate-700">수업</label>
-                <select name="course_id" className="w-full rounded-md border border-slate-200 px-3 py-2" required>
+                <select name="course_id" className="w-[200px] rounded-md border border-slate-200 px-3 py-2" required>
                   <option value="">선택</option>
                   {courses?.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -40,9 +40,6 @@ export default async function InstructorAvailabilityPage() {
                     </option>
                   ))}
                 </select>
-              </div>
-              <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
-                요일과 시간대를 1개 이상 입력하면 해당 시간으로 바로 매칭됩니다. 시간 범위마다 한 번씩 저장됩니다.
               </div>
             </div>
 
