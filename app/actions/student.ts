@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache';
 import { requireSession, requireRole } from '@/lib/auth';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { splitWindowByDuration } from '@/lib/time';
 import { runMatching } from '@/lib/matching';
 
 type SlotSelection = { windowId: string; start_time: string; end_time: string };
@@ -48,7 +47,6 @@ export async function applyToCourse(courseId: string, windowIds: string[]) {
 	}
 
 	const windowMap = new Map(windows.map((w) => [w.id, w]));
-	const slotCache = [...windows];
 	const finalWindowIds: string[] = [];
 
 	for (const selection of parsedSelections) {
@@ -57,73 +55,15 @@ export async function applyToCourse(courseId: string, windowIds: string[]) {
 			throw new Error('존재하지 않는 시간이 포함되어 있습니다.');
 		}
 
-		let slots: {
-			start_time: string;
-			end_time: string;
-			day_of_week: number;
-			instructor_id: string | null;
-			instructor_name: string | null;
-		}[];
-		try {
-			slots = splitWindowByDuration(baseWindow, course.duration_minutes);
-		} catch (error) {
-			throw new Error((error as Error).message);
-		}
+		const isExactSlot =
+			baseWindow.start_time === selection.start_time &&
+			baseWindow.end_time === selection.end_time;
 
-		const matchedSlot = slots.find(
-			(slot) =>
-				slot.start_time === selection.start_time &&
-				slot.end_time === selection.end_time
-		);
-		if (!matchedSlot) {
+		if (!isExactSlot) {
 			throw new Error('선택한 시간이 수업 길이와 맞지 않습니다.');
 		}
 
-		const existingSlot = slotCache.find(
-			(slot) =>
-				slot.day_of_week === matchedSlot.day_of_week &&
-				slot.start_time === matchedSlot.start_time &&
-				slot.end_time === matchedSlot.end_time &&
-				slot.instructor_id === matchedSlot.instructor_id &&
-				slot.instructor_name === matchedSlot.instructor_name
-		);
-
-		if (existingSlot) {
-			finalWindowIds.push(existingSlot.id);
-			continue;
-		}
-
-		const { data: newWindow, error } = await supabase
-			.from('course_time_windows')
-			.insert({
-				course_id: courseId,
-				day_of_week: matchedSlot.day_of_week,
-				start_time: matchedSlot.start_time,
-				end_time: matchedSlot.end_time,
-				instructor_id:
-					matchedSlot.instructor_id ||
-					baseWindow.instructor_id ||
-					null,
-				instructor_name:
-					matchedSlot.instructor_name ||
-					baseWindow.instructor_name ||
-					null,
-				capacity: course.capacity,
-			})
-			.select(
-				'id, day_of_week, start_time, end_time, instructor_id, instructor_name'
-			)
-			.single();
-
-		if (error || !newWindow) {
-			console.error(error);
-			throw new Error(
-				'선택한 시간 저장에 실패했습니다. 다시 시도해주세요.'
-			);
-		}
-
-		slotCache.push(newWindow);
-		finalWindowIds.push(newWindow.id);
+		finalWindowIds.push(baseWindow.id);
 	}
 
 	const windowSet = Array.from(new Set(finalWindowIds));

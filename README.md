@@ -13,7 +13,6 @@ Next.js(App Router, TypeScript) + Supabase(Auth/Postgres/RLS)로 구현한 린�
   - 신청 현황, 확정된 시간표 확인
 - **강사**
   - 가능한 과목/학년 등록
-  - 1시간 단위 가능 시간 슬롯 등록(capacity=4)
   - 배정/등록 수업 및 시간표 확인
 
 ## 폴더 구조 (주요 파일)
@@ -61,7 +60,7 @@ Next.js(App Router, TypeScript) + Supabase(Auth/Postgres/RLS)로 구현한 린�
 
 ## 자동 매칭 로직 요약
 - 입력: course_id, from, to
-- 절차: pending `applications` → 학생/강사 `availability_slots`(1시간) → 남은 capacity가 가장 적은 강사 슬롯 우선 + 강사 배정 수 적은 순으로 할당 → `matches` upsert → `match_students` insert(트리거로 중복/정원 방지) → `applications.status = matched`
+- 절차: pending `applications` → 관리자가 등록한 `course_time_windows` 범위 내 학생 선택 → 가장 빠른 가능 슬롯 기준 선착순 배정 → `matches` insert → `match_students` insert(트리거로 중복/정원 방지) → `applications.status = matched`
 - 동시 실행 방지: `matching_runs` 테이블의 running 상태를 확인/갱신
 
 ## TODO / 확장 포인트

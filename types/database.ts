@@ -127,29 +127,6 @@ export interface Database {
         };
         Update: Partial<Omit<Database["public"]["Tables"]["applications"]["Row"], "id" | "course_id" | "student_id" | "created_at">>;
       };
-      availability_slots: {
-        Row: {
-          id: string;
-          course_id: string | null;
-          user_id: string;
-          role: "student" | "instructor";
-          start_at: string;
-          end_at: string;
-          capacity: number;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          course_id?: string | null;
-          user_id: string;
-          role: "student" | "instructor";
-          start_at: string;
-          end_at: string;
-          capacity?: number;
-          created_at?: string;
-        };
-        Update: Partial<Omit<Database["public"]["Tables"]["availability_slots"]["Row"], "id" | "user_id" | "role" | "created_at">>;
-      };
       matches: {
         Row: {
           id: string;

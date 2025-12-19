@@ -21,7 +21,6 @@ alter table public.course_time_windows enable row level security;
 alter table public.instructor_subjects enable row level security;
 alter table public.applications enable row level security;
 alter table public.application_time_choices enable row level security;
-alter table public.availability_slots enable row level security;
 alter table public.matches enable row level security;
 alter table public.match_students enable row level security;
 alter table public.email_batches enable row level security;
@@ -61,12 +60,6 @@ create policy "application_time_choices_owner" on public.application_time_choice
   for all using (exists (select 1 from public.applications a where a.id = application_id and a.student_id = auth.uid()))
   with check (exists (select 1 from public.applications a where a.id = application_id and a.student_id = auth.uid()));
 create policy "application_time_choices_admin" on public.application_time_choices
-  using (public.is_admin()) with check (public.is_admin());
-
--- Availability slots
-create policy "availability_owner" on public.availability_slots
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "availability_admin" on public.availability_slots
   using (public.is_admin()) with check (public.is_admin());
 
 -- Matches

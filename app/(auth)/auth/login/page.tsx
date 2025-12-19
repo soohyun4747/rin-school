@@ -33,7 +33,7 @@ export default function LoginPage() {
 			router.push('/student/applications');
 		}
 		if (data.user.user_metadata.role === 'instructor') {
-			router.push('/instructor/availability');
+			router.push('/instructor/timetable');
 		}
 	};
 

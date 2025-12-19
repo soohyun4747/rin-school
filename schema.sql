@@ -62,18 +62,6 @@ create table if not exists applications (
   created_at timestamptz not null default now()
 );
 
-create table if not exists availability_slots (
-  id uuid primary key default uuid_generate_v4(),
-  course_id uuid references courses(id) on delete set null,
-  user_id uuid not null references profiles(id) on delete cascade,
-  role text not null check (role in ('student','instructor')),
-  start_at timestamptz not null,
-  end_at timestamptz not null,
-  capacity int not null default 4,
-  created_at timestamptz not null default now(),
-  constraint availability_valid check (start_at < end_at)
-);
-
 create table if not exists matches (
   id uuid primary key default uuid_generate_v4(),
   course_id uuid not null references courses(id) on delete cascade,
@@ -119,7 +107,6 @@ create table if not exists matching_runs (
 
 -- Indexes
 create index if not exists idx_applications_student on applications(student_id);
-create index if not exists idx_availability_user_role on availability_slots(user_id, role);
 create index if not exists idx_matches_course_slot on matches(course_id, slot_start_at);
 create index if not exists idx_match_students_student on match_students(student_id);
 create index if not exists idx_matching_runs_course on matching_runs(course_id);

@@ -26,15 +26,14 @@ export async function SiteHeader() {
 			{ href: '/admin/instructors', label: '강사 관리' },
       { href: '/admin/landing', label: '랜딩 이미지' },
 		],
-		student: [
-			{ href: '/student/applications', label: '신청 현황' },
-			{ href: '/student/timetable', label: '시간표' },
-		],
-		instructor: [
-			{ href: '/instructor/subjects', label: '가능 과목' },
-			{ href: '/instructor/availability', label: '가능 시간' },
-			{ href: '/instructor/timetable', label: '시간표' },
-		],
+	student: [
+		{ href: '/student/applications', label: '신청 현황' },
+		{ href: '/student/timetable', label: '시간표' },
+	],
+	instructor: [
+		{ href: '/instructor/subjects', label: '가능 과목' },
+		{ href: '/instructor/timetable', label: '시간표' },
+	],
 	};
 
 	const roleMenu = profile ? menuByRole[profile.role] : [];
