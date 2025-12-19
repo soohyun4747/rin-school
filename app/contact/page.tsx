@@ -28,7 +28,7 @@ export default function ContactPage() {
 					린스쿨 팀에 문의하기
 				</h1>
 				<p className='text-base text-slate-600'>
-					수업 소개, 매칭 방법, 도입 일정 등 궁금한 내용을 남겨주시면
+					궁금한 내용을 남겨주시면
 					빠르게 연락드리겠습니다.
 				</p>
 			</div>
@@ -128,12 +128,12 @@ export default function ContactPage() {
 							<Link
 								href='/'
 								className='text-sm text-[var(--primary)] hover:underline'>
-								랜딩 페이지로 돌아가기
+								홈으로 돌아가기
 							</Link>
 							<Link
 								href='/auth/login'
 								className='text-sm text-[var(--primary)] hover:underline'>
-								로그인 페이지 열기
+								로그인하러 가기
 							</Link>
 							<Link
 								href='/classes'

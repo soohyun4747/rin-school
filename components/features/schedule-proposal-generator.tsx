@@ -314,8 +314,7 @@ export default function ScheduleProposalGenerator({
 					<CardTitle>가능한 시간표 생성</CardTitle>
 					<p className='text-sm text-slate-600'>
 						신청한 시간대와 정원을 기준으로 추천 시간표를 만들고
-						확정할 수 있습니다. 생성된 추천안은 DB에 저장되지 않으며,
-						확정한 일정만 저장됩니다.
+						확정할 수 있습니다.
 					</p>
 				</div>
 				<Button onClick={handleGenerate} disabled={isGenerating}>
