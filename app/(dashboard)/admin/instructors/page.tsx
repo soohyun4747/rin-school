@@ -14,19 +14,24 @@ type InstructorProfile = {
 	created_at: string;
 };
 
-export default async function AdminInstructorsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+export default async function AdminInstructorsPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
 	const { profile } = await requireSession();
 	requireRole(profile.role, ['admin']);
 	const supabase = await getSupabaseServerClient();
 
-	const { q = '' } = await searchParams;
+	const { q = '', page = '1' } = await searchParams as { q?: string; page?: string };
 	const searchKeyword = Array.isArray(q) ? q[0] : q;
+	const currentPage = Math.max(1, Number(Array.isArray(page) ? page[0] : page) || 1);
+	const pageSize = 20;
+	const from = (currentPage - 1) * pageSize;
+	const to = from + pageSize - 1;
 
 	let instructorQuery = supabase
 		.from('profiles')
-		.select('id, name, email, phone, birthdate, kakao_id, country, created_at')
+		.select('id, name, email, phone, birthdate, kakao_id, country, created_at', { count: 'exact' })
 		.eq('role', 'instructor')
-		.order('created_at', { ascending: false });
+		.order('created_at', { ascending: false })
+		.range(from, to);
 
 	if (searchKeyword) {
 		const keyword = `%${searchKeyword}%`;
@@ -35,7 +40,7 @@ export default async function AdminInstructorsPage({ searchParams }: { searchPar
 		);
 	}
 
-	const [{ data: instructors }, { data: subjects }] = await Promise.all([
+	const [{ data: instructors, count }, { data: subjects }] = await Promise.all([
 		instructorQuery,
 		supabase
 			.from('instructor_subjects')
@@ -50,6 +55,14 @@ export default async function AdminInstructorsPage({ searchParams }: { searchPar
 	});
 
 	const instructorRows: InstructorProfile[] = instructors ?? [];
+	const totalCount = count ?? instructorRows.length;
+	const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+	const buildPageLink = (pageNumber: number) => {
+		const params = new URLSearchParams();
+		if (searchKeyword) params.set('q', searchKeyword);
+		params.set('page', pageNumber.toString());
+		return `?${params.toString()}`;
+	};
 
 	return (
 		<div className='space-y-6'>
@@ -123,6 +136,29 @@ export default async function AdminInstructorsPage({ searchParams }: { searchPar
 									})}
 								</tbody>
 							</table>
+						</div>
+					)}
+					{instructorRows.length > 0 && (
+						<div className="flex items-center justify-between text-sm text-slate-600">
+							<span>
+								{currentPage} / {totalPages} 페이지 · 총 {totalCount}명
+							</span>
+							<div className="flex items-center gap-2">
+								<a
+									href={buildPageLink(Math.max(1, currentPage - 1))}
+									className={`rounded-md border px-3 py-1 ${currentPage === 1 ? 'pointer-events-none border-slate-200 text-slate-400' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+									aria-disabled={currentPage === 1}
+								>
+									이전
+								</a>
+								<a
+									href={buildPageLink(Math.min(totalPages, currentPage + 1))}
+									className={`rounded-md border px-3 py-1 ${currentPage >= totalPages ? 'pointer-events-none border-slate-200 text-slate-400' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+									aria-disabled={currentPage >= totalPages}
+								>
+									다음
+								</a>
+							</div>
 						</div>
 					)}
 				</CardContent>

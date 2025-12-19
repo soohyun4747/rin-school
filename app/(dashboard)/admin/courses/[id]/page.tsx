@@ -24,7 +24,6 @@ type WindowRow = {
   end_time: string;
   instructor_id: string | null;
   instructor_name: string | null;
-  capacity: number | null;
 };
 
 type MatchRow = {
@@ -60,7 +59,7 @@ export default async function AdminCourseDetailPage({
   const [{ data: windows }, { data: applications }, { data: matches }] = await Promise.all([
     supabase
       .from("course_time_windows")
-      .select("id, day_of_week, start_time, end_time, instructor_id, instructor_name, capacity")
+      .select("id, day_of_week, start_time, end_time, instructor_id, instructor_name")
       .eq("course_id", course.id)
       .order("day_of_week", { ascending: true })
       .order("start_time", { ascending: true }),
@@ -153,7 +152,7 @@ export default async function AdminCourseDetailPage({
                     <p className="text-sm font-semibold text-slate-900">{windowLabel(w)}</p>
                     <p className="text-xs text-slate-600">강사: {instructorLabel(w)}</p>
                   </div>
-                  <Badge variant="info">정원 {w.capacity ?? 1}명</Badge>
+                  <Badge variant="info">정원 {course.capacity}명</Badge>
                 </div>
                 <div className="mt-3 space-y-2">
                   <p className="text-xs font-semibold text-slate-700">신청 학생 ({applicants.length})</p>

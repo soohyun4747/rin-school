@@ -8,6 +8,48 @@ export type DayTimeRange = {
   end_time: string;
 };
 
+function minutesFromTimeString(time: string) {
+  const [hour, minute] = time.split(":").map(Number);
+  return hour * 60 + minute;
+}
+
+function timeStringFromMinutes(totalMinutes: number) {
+  const hours = Math.floor(totalMinutes / 60)
+    .toString()
+    .padStart(2, "0");
+  const minutes = (totalMinutes % 60).toString().padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
+export function splitWindowByDuration<T extends { day_of_week: number; start_time: string; end_time: string; instructor_id?: string | null; instructor_name?: string | null }>(
+  window: T,
+  durationMinutes: number
+) {
+  const startMinutes = minutesFromTimeString(window.start_time);
+  const endMinutes = minutesFromTimeString(window.end_time);
+
+  if (Number.isNaN(startMinutes) || Number.isNaN(endMinutes) || startMinutes >= endMinutes) {
+    throw new Error("시간 범위를 확인해주세요.");
+  }
+
+  const total = endMinutes - startMinutes;
+  if (total < durationMinutes) {
+    throw new Error("수업 길이보다 긴 시간 범위를 입력해주세요.");
+  }
+  if (total % durationMinutes !== 0) {
+    throw new Error("수업 길이(duration_minutes)로 나누어떨어지는 시간 범위만 등록할 수 있습니다.");
+  }
+
+  const slots: Array<T & { start_time: string; end_time: string }> = [];
+  for (let current = startMinutes; current + durationMinutes <= endMinutes; current += durationMinutes) {
+    const slotStart = timeStringFromMinutes(current);
+    const slotEnd = timeStringFromMinutes(current + durationMinutes);
+    slots.push({ ...window, start_time: slotStart, end_time: slotEnd });
+  }
+
+  return slots;
+}
+
 export function generateSlotsFromWindows(
   windows: TimeWindow[],
   options: { days?: number; durationMinutes?: number; from?: Date } = {}
@@ -121,7 +163,7 @@ export function buildSlotsFromDayTimeRanges(ranges: DayTimeRange[], options: { r
 }
 
 export function generateWindowOccurrences(
-  windows: { id: string; day_of_week: number; start_time: string; end_time: string }[],
+  windows: { windowId: string; day_of_week: number; start_time: string; end_time: string }[],
   options: { from: Date; to: Date }
 ) {
   const occurrences: { windowId: string; start: Date; end: Date }[] = [];
@@ -141,7 +183,7 @@ export function generateWindowOccurrences(
       startAt.setHours(sh, sm, 0, 0);
       endAt.setHours(eh, em, 0, 0);
       if (startAt >= options.from && endAt <= endBoundary) {
-        occurrences.push({ windowId: w.id, start: startAt, end: endAt });
+        occurrences.push({ windowId: w.windowId, start: startAt, end: endAt });
       }
     });
   }

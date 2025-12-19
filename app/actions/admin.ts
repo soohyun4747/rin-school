@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { requireSession, requireRole } from '@/lib/auth';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { runMatching } from '@/lib/matching';
+import { splitWindowByDuration } from '@/lib/time';
 
 type TimeWindowInput = {
 	day_of_week: number;
@@ -12,7 +13,6 @@ type TimeWindowInput = {
 	end_time: string;
 	instructor_id?: string | null;
 	instructor_name?: string | null;
-	capacity?: number | null;
 };
 
 const ALLOWED_WEEKS = [1, 2, 3, 4, 6, 8, 12];
@@ -25,7 +25,6 @@ function parseTimeWindows(raw: string): TimeWindowInput[] {
 		if (!Array.isArray(parsed)) return [];
 		return parsed.map((w) => ({
 			...w,
-			capacity: Number.isNaN(Number(w.capacity)) ? 1 : Number(w.capacity),
 			instructor_id: w.instructor_id || null,
 			instructor_name: w.instructor_name || null,
 		}));
@@ -65,16 +64,12 @@ function validateTimeWindows(windows: TimeWindowInput[]) {
 		if (startMinutes >= endMinutes) {
 			throw new Error('시작 시간은 종료 시간보다 이전이어야 합니다.');
 		}
-
-		if (w.capacity !== undefined && w.capacity !== null) {
-			if (Number.isNaN(w.capacity) || w.capacity < 1) {
-				throw new Error('정원은 1명 이상이어야 합니다.');
-			}
-		}
 	});
 }
 
-export async function createCourse(formData: FormData) {
+export type CourseCreationResult = { success: boolean; error?: string };
+
+export async function createCourse(formData: FormData): Promise<CourseCreationResult> {
 	const { session, profile } = await requireSession();
 	requireRole(profile.role, ['admin']);
 	const supabase = await getSupabaseServerClient();
@@ -93,25 +88,32 @@ export async function createCourse(formData: FormData) {
 	let imageUrl: string | null = null;
 
 	if (!title || !subject || !gradeRange) {
-		throw new Error('필수 항목을 모두 입력해주세요.');
+		return { success: false, error: '필수 항목을 모두 입력해주세요.' };
 	}
 
 	if (!ALLOWED_WEEKS.includes(weeks)) {
-		throw new Error('과정 기간을 올바르게 선택해주세요.');
+		return { success: false, error: '과정 기간을 올바르게 선택해주세요.' };
 	}
 
 	if (description && description.length > 800) {
-		throw new Error('설명은 800자 이내로 작성해주세요.');
+		return { success: false, error: '설명은 800자 이내로 작성해주세요.' };
 	}
 
 	if (parsedWindows.length === 0) {
-		throw new Error('시간 범위를 1개 이상 추가해주세요.');
+		return { success: false, error: '시간 범위를 1개 이상 추가해주세요.' };
 	}
 	validateTimeWindows(parsedWindows);
 
+	let slotWindows: (TimeWindowInput & { start_time: string; end_time: string })[] = [];
+	try {
+		slotWindows = parsedWindows.flatMap((window) => splitWindowByDuration(window, duration));
+	} catch (error) {
+		return { success: false, error: (error as Error).message };
+	}
+
 	if (imageFile instanceof File && imageFile.size > 0) {
 		if (imageFile.type && !imageFile.type.startsWith('image/')) {
-			throw new Error('이미지 파일만 업로드할 수 있습니다.');
+			return { success: false, error: '이미지 파일만 업로드할 수 있습니다.' };
 		}
 
 		const extension = imageFile.name.split('.').pop() || 'png';
@@ -130,9 +132,10 @@ export async function createCourse(formData: FormData) {
 
 		if (uploadError) {
 			console.error('course image upload error:', uploadError);
-			throw new Error(
-				'이미지 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.'
-			);
+			return {
+				success: false,
+				error: '이미지 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.',
+			};
 		}
 
 		const { data } = supabase.storage
@@ -159,19 +162,18 @@ export async function createCourse(formData: FormData) {
 
 	if (error) {
 		console.error('courses insert error:', error);
-		// ✅ Response 리턴 X, error 객체 통째로 전달 X
-		throw new Error(`Insert failed: ${error.message}`);
+		return { success: false, error: `Insert failed: ${error.message}` };
 	}
 
 	if (newCourse?.id) {
-		const timeWindows = parsedWindows.map((w) => ({
+		const timeWindows = slotWindows.map((w) => ({
 			course_id: newCourse.id,
 			day_of_week: w.day_of_week,
 			start_time: w.start_time,
 			end_time: w.end_time,
 			instructor_id: w.instructor_id || null,
 			instructor_name: w.instructor_name || null,
-			capacity: w.capacity ?? 1,
+			capacity,
 		}));
 
 		const { error: windowError } = await supabase
@@ -181,12 +183,13 @@ export async function createCourse(formData: FormData) {
 		if (windowError) {
 			console.error('course time window insert error:', windowError);
 			await supabase.from('courses').delete().eq('id', newCourse.id);
-			throw new Error('수업 생성 중 시간이 저장되지 않았습니다. 다시 시도해주세요.');
+			return { success: false, error: '수업 생성 중 시간이 저장되지 않았습니다. 다시 시도해주세요.' };
 		}
 	}
 
 	revalidatePath('/admin/courses');
 	revalidatePath('/classes');
+	return { success: true };
 }
 
 export async function deleteCourse(courseId: string) {
@@ -211,30 +214,47 @@ export async function createTimeWindow(courseId: string, formData: FormData) {
 	requireRole(profile.role, ['admin']);
 	const supabase = await getSupabaseServerClient();
 
+	const { data: course } = await supabase
+		.from('courses')
+		.select('capacity, duration_minutes')
+		.eq('id', courseId)
+		.single();
+
+	if (!course) {
+		throw new Error('수업 정보를 불러오지 못했습니다.');
+	}
+
 	const dayOfWeek = Number(formData.get('day_of_week'));
 	const startTime = String(formData.get('start_time') ?? '');
 	const endTime = String(formData.get('end_time') ?? '');
 	const instructorId = String(formData.get('instructor_id') ?? '').trim();
 	const instructorName = String(formData.get('instructor_name') ?? '').trim();
-	const capacityRaw = Number(formData.get('capacity') ?? 1);
 
 	if (Number.isNaN(dayOfWeek) || !startTime || !endTime) {
 		throw new Error('요일과 시간을 올바르게 입력해주세요.');
 	}
 
-	if (Number.isNaN(capacityRaw) || capacityRaw < 1) {
-		throw new Error('정원은 1명 이상이어야 합니다.');
+	let slotWindows: { start_time: string; end_time: string; day_of_week: number }[];
+	try {
+		slotWindows = splitWindowByDuration(
+			{ day_of_week: dayOfWeek, start_time: startTime, end_time: endTime },
+			course.duration_minutes
+		);
+	} catch (error) {
+		throw new Error((error as Error).message);
 	}
 
-	const { error } = await supabase.from('course_time_windows').insert({
+	const rows = slotWindows.map((slot) => ({
 		course_id: courseId,
-		day_of_week: dayOfWeek,
-		start_time: startTime,
-		end_time: endTime,
+		day_of_week: slot.day_of_week,
+		start_time: slot.start_time,
+		end_time: slot.end_time,
 		instructor_id: instructorId || null,
 		instructor_name: instructorName || null,
-		capacity: capacityRaw,
-	});
+		capacity: course.capacity,
+	}));
+
+	const { error } = await supabase.from('course_time_windows').insert(rows);
 
 	if (error) {
 		console.error(error);

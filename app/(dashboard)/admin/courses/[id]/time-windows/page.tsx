@@ -46,7 +46,7 @@ export default async function CourseTimeWindowsPage({
 	const [{ data: windows }, { data: instructors }] = await Promise.all([
 		supabase
 		.from('course_time_windows')
-		.select('id, day_of_week, start_time, end_time, instructor_id, instructor_name, capacity')
+		.select('id, day_of_week, start_time, end_time, instructor_id, instructor_name')
 		.eq('course_id', course.id)
 		.order('day_of_week', { ascending: true })
 		.order('start_time', { ascending: true }),
@@ -81,6 +81,9 @@ export default async function CourseTimeWindowsPage({
 					<CardTitle>시간 추가</CardTitle>
 				</CardHeader>
 				<CardContent className='space-y-3'>
+					<p className='text-xs text-slate-600'>
+						입력한 범위는 수업 길이({course.duration_minutes}분)로 자동 분할되며, 각 슬롯은 수업 정원({course.capacity}명)으로 설정됩니다.
+					</p>
 					<form
 						action={createTimeWindow.bind(null, course.id)}
 						className='grid grid-cols-1 gap-3 md:grid-cols-6'>
@@ -118,18 +121,6 @@ export default async function CourseTimeWindowsPage({
 							<Input
 								name='end_time'
 								type='time'
-								required
-							/>
-						</div>
-						<div>
-							<label className='text-sm font-medium text-slate-700'>
-								정원
-							</label>
-							<Input
-								name='capacity'
-								type='number'
-								min={1}
-								defaultValue={1}
 								required
 							/>
 						</div>
@@ -192,7 +183,7 @@ export default async function CourseTimeWindowsPage({
 											w.instructor_name ||
 											w.instructor_id ||
 											'미지정'}{' '}
-										· 정원 {w.capacity ?? 1}명
+										· 정원 {course.capacity}명
 									</p>
 								</div>
 								<form

@@ -1,6 +1,6 @@
 // lib/matching.ts
 import { getSupabaseServerClient /*, getSupabaseAdminClient */ } from "@/lib/supabase/server";
-import { generateWindowOccurrences } from "@/lib/time";
+import { generateWindowOccurrences, splitWindowByDuration } from "@/lib/time";
 
 interface RunMatchingParams {
   courseId: string;
@@ -48,8 +48,18 @@ export async function runMatching({ courseId, from, to, requestedBy }: RunMatchi
   };
 
   try {
-    const [{ data: windows, error: windowsError }, { data: applications, error: appsError }, { data: existingMatches, error: matchesError }] =
+    const [
+      { data: course, error: courseError },
+      { data: windows, error: windowsError },
+      { data: applications, error: appsError },
+      { data: existingMatches, error: matchesError },
+    ] =
       await Promise.all([
+        supabase
+          .from("courses")
+          .select("id, duration_minutes, capacity")
+          .eq("id", courseId)
+          .single(),
         supabase
           .from("course_time_windows")
           .select("id, day_of_week, start_time, end_time, instructor_id, instructor_name, capacity")
@@ -68,35 +78,82 @@ export async function runMatching({ courseId, from, to, requestedBy }: RunMatchi
           .lte("slot_end_at", to),
       ]);
 
+    if (courseError || !course) throw courseError || new Error("수업 정보를 불러오지 못했습니다.");
     if (windowsError) throw windowsError;
     if (appsError) throw appsError;
     if (matchesError) throw matchesError;
 
-    const windowMap = new Map((windows ?? []).map((w) => [w.id, w]));
-    const occurrences = generateWindowOccurrences(
-      (windows ?? []).map((w) => ({
-        id: w.id,
-        day_of_week: w.day_of_week,
-        start_time: w.start_time,
-        end_time: w.end_time,
-      })),
-      { from: new Date(from), to: new Date(to) }
-    );
+    const toMinutes = (time: string) => {
+      const [h, m] = time.split(":").map(Number);
+      return h * 60 + m;
+    };
 
-    const occurrenceStates = occurrences.map((occ) => {
-      const windowInfo = windowMap.get(occ.windowId)!;
-      const key = `${windowInfo.instructor_id ?? "none"}-${occ.start.toISOString()}`;
-      const match = existingMatches?.find((m) => m.slot_start_at === occ.start.toISOString() && (m.instructor_id ?? "none") === (windowInfo.instructor_id ?? "none"));
-      const remaining = (windowInfo.capacity ?? 1) - (match?.match_students?.length ?? 0);
-      return {
-        window: windowInfo,
-        start: occ.start,
-        end: occ.end,
-        key,
-        matchId: match?.id ?? null,
-        remaining: remaining > 0 ? remaining : 0,
-      };
+    const sortedWindows =
+      windows
+        ?.slice()
+        .sort((a, b) => {
+          if (a.day_of_week !== b.day_of_week) return a.day_of_week - b.day_of_week;
+          if (a.start_time !== b.start_time) return a.start_time.localeCompare(b.start_time);
+          const aDuration = toMinutes(a.end_time) - toMinutes(a.start_time);
+          const bDuration = toMinutes(b.end_time) - toMinutes(b.start_time);
+          return aDuration - bDuration;
+        }) ?? [];
+
+    const slotWindows =
+      sortedWindows.flatMap((w) => {
+        try {
+          return splitWindowByDuration(w, course.duration_minutes).map((slot) => ({
+            ...slot,
+            id: w.id,
+            windowId: w.id,
+          }));
+        } catch {
+          return [
+            {
+              ...w,
+              id: w.id,
+              windowId: w.id,
+            },
+          ];
+        }
+      }) ?? [];
+
+    const uniqueSlotMap = new Map<string, (typeof slotWindows)[number]>();
+    slotWindows.forEach((slot) => {
+      const key = `${slot.day_of_week}-${slot.start_time}-${slot.end_time}-${slot.instructor_id ?? "none"}-${slot.instructor_name ?? "none"}`;
+      if (!uniqueSlotMap.has(key)) {
+        uniqueSlotMap.set(key, slot);
+      }
     });
+    const normalizedSlots = Array.from(uniqueSlotMap.values());
+
+    const occurrences = generateWindowOccurrences(normalizedSlots, { from: new Date(from), to: new Date(to) });
+
+    const occurrenceStates = occurrences
+      .map((occ) => {
+        const occStartTime = `${occ.start.getHours().toString().padStart(2, "0")}:${occ.start
+          .getMinutes()
+          .toString()
+          .padStart(2, "0")}`;
+        const windowInfo = normalizedSlots.find(
+          (w) => w.windowId === occ.windowId && w.start_time === occStartTime && w.day_of_week === occ.start.getDay()
+        );
+        if (!windowInfo) return null;
+        const key = `${windowInfo.instructor_id ?? "none"}-${occ.start.toISOString()}`;
+        const match = existingMatches?.find(
+          (m) => m.slot_start_at === occ.start.toISOString() && (m.instructor_id ?? "none") === (windowInfo.instructor_id ?? "none")
+        );
+        const remaining = course.capacity - (match?.match_students?.length ?? 0);
+        return {
+          window: windowInfo,
+          start: occ.start,
+          end: occ.end,
+          key,
+          matchId: match?.id ?? null,
+          remaining: remaining > 0 ? remaining : 0,
+        };
+      })
+      .filter((occ): occ is NonNullable<typeof occ> => Boolean(occ));
 
     let matchedCount = 0;
     let unmatchedCount = 0;

@@ -12,7 +12,6 @@ type TimeWindowField = {
   end_time: string;
   instructor_id?: string;
   instructor_name?: string;
-  capacity?: number;
 };
 
 const days = ["일", "월", "화", "수", "목", "금", "토"];
@@ -31,20 +30,18 @@ export function CourseScheduleFields({ instructors }: Props) {
       day_of_week: 1,
       start_time: "",
       end_time: "",
-      capacity: 1,
     },
   ]);
 
   const windowsPayload = useMemo(
     () =>
       JSON.stringify(
-        windows.map(({ day_of_week, start_time, end_time, instructor_id, instructor_name, capacity }) => ({
+        windows.map(({ day_of_week, start_time, end_time, instructor_id, instructor_name }) => ({
           day_of_week,
           start_time,
           end_time,
           instructor_id,
           instructor_name,
-          capacity: capacity ?? 1,
         }))
       ),
     [windows]
@@ -58,7 +55,6 @@ export function CourseScheduleFields({ instructors }: Props) {
         day_of_week: 1,
         start_time: "",
         end_time: "",
-        capacity: 1,
       },
     ]);
   };
@@ -79,7 +75,7 @@ export function CourseScheduleFields({ instructors }: Props) {
     <div className="md:col-span-2 space-y-4 rounded-lg border border-slate-200 p-4">
       <div className="flex flex-col gap-1">
         <p className="text-sm font-semibold text-slate-800">수업 일정</p>
-        <p className="text-xs text-slate-600">최소 1개 이상의 시간 범위를 등록해주세요. 정원과 담당 강사를 지정할 수 있습니다.</p>
+        <p className="text-xs text-slate-600">최소 1개 이상의 시간 범위를 등록해주세요. 담당 강사를 지정할 수 있습니다.</p>
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
@@ -138,16 +134,6 @@ export function CourseScheduleFields({ instructors }: Props) {
                   type="time"
                   value={window.end_time}
                   onChange={(e) => updateWindow(window.id, { end_time: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-slate-600">정원</label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={window.capacity ?? 1}
-                  onChange={(e) => updateWindow(window.id, { capacity: Number(e.target.value) || 1 })}
                   required
                 />
               </div>
