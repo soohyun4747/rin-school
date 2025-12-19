@@ -35,7 +35,9 @@ export default async function StudentCourseDetail({
 
 	const { data: windows, error } = await supabase
 		.from('course_time_windows')
-		.select('id, day_of_week, start_time, end_time, instructor_id, instructor_name')
+		.select(
+			'id, day_of_week, start_time, end_time, instructor_id, instructor_name'
+		)
 		.eq('course_id', course.id)
 		.order('day_of_week', { ascending: true });
 
@@ -56,13 +58,18 @@ export default async function StudentCourseDetail({
 	const slotOptions =
 		(windows ?? []).flatMap((w) => {
 			try {
-				return splitWindowByDuration(w, course.duration_minutes).map((slot) => ({
-					value: `${w.id}|${slot.start_time}|${slot.end_time}`,
-					day_of_week: slot.day_of_week,
-					start_time: slot.start_time,
-					end_time: slot.end_time,
-					instructor_label: slot.instructor_name || slot.instructor_id || '미지정',
-				}));
+				return splitWindowByDuration(w, course.duration_minutes).map(
+					(slot) => ({
+						value: `${w.id}|${slot.start_time}|${slot.end_time}`,
+						day_of_week: slot.day_of_week,
+						start_time: slot.start_time,
+						end_time: slot.end_time,
+						instructor_label:
+							slot.instructor_name ||
+							slot.instructor_id ||
+							'미지정',
+					})
+				);
 			} catch (err) {
 				console.error('slot split failed', err);
 				return [
@@ -71,7 +78,8 @@ export default async function StudentCourseDetail({
 						day_of_week: w.day_of_week,
 						start_time: w.start_time,
 						end_time: w.end_time,
-						instructor_label: w.instructor_name || w.instructor_id || '미지정',
+						instructor_label:
+							w.instructor_name || w.instructor_id || '미지정',
 					},
 				];
 			}
@@ -156,11 +164,13 @@ export default async function StudentCourseDetail({
 							className='space-y-4'>
 							<div className='space-y-3'>
 								<p className='text-sm text-slate-700'>
-									가능한 시간대를 선택해주세요. 여러 개를 선택할 수 있습니다.
+									가능한 시간대를 선택해주세요. 여러 개를
+									선택할 수 있습니다.
 								</p>
 								{slotOptions.length === 0 && (
 									<p className='text-slate-600'>
-										관리자가 아직 시간을 등록하지 않았습니다.
+										관리자가 아직 시간을 등록하지
+										않았습니다.
 									</p>
 								)}
 								<div className='space-y-2'>
@@ -177,10 +187,15 @@ export default async function StudentCourseDetail({
 												/>
 												<div>
 													<p className='font-semibold text-slate-900'>
-														{days[slot.day_of_week]} {slot.start_time} - {slot.end_time}
+														{days[slot.day_of_week]}{' '}
+														{slot.start_time} -{' '}
+														{slot.end_time}
 													</p>
 													<p className='text-xs text-slate-600'>
-														강사: {slot.instructor_label} · 정원 {course.capacity}명
+														강사:{' '}
+														{slot.instructor_label}{' '}
+														· 정원 {course.capacity}
+														명
 													</p>
 												</div>
 											</div>

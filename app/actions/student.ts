@@ -1,10 +1,10 @@
 'use server';
 
-import { revalidatePath } from "next/cache";
-import { requireSession, requireRole } from "@/lib/auth";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { splitWindowByDuration } from "@/lib/time";
-import { runMatching } from "@/lib/matching";
+import { revalidatePath } from 'next/cache';
+import { requireSession, requireRole } from '@/lib/auth';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { splitWindowByDuration } from '@/lib/time';
+import { runMatching } from '@/lib/matching';
 
 type SlotSelection = { windowId: string; start_time: string; end_time: string };
 
@@ -26,10 +26,16 @@ export async function applyToCourse(courseId: string, windowIds: string[]) {
 	});
 
 	const [{ data: course }, { data: windows }] = await Promise.all([
-		supabase.from('courses').select('capacity, duration_minutes').eq('id', courseId).single(),
+		supabase
+			.from('courses')
+			.select('capacity, duration_minutes')
+			.eq('id', courseId)
+			.single(),
 		supabase
 			.from('course_time_windows')
-			.select('id, day_of_week, start_time, end_time, instructor_id, instructor_name')
+			.select(
+				'id, day_of_week, start_time, end_time, instructor_id, instructor_name'
+			)
 			.eq('course_id', courseId),
 	]);
 
@@ -51,7 +57,13 @@ export async function applyToCourse(courseId: string, windowIds: string[]) {
 			throw new Error('존재하지 않는 시간이 포함되어 있습니다.');
 		}
 
-		let slots: { start_time: string; end_time: string; day_of_week: number; instructor_id: string | null; instructor_name: string | null }[];
+		let slots: {
+			start_time: string;
+			end_time: string;
+			day_of_week: number;
+			instructor_id: string | null;
+			instructor_name: string | null;
+		}[];
 		try {
 			slots = splitWindowByDuration(baseWindow, course.duration_minutes);
 		} catch (error) {
@@ -59,7 +71,9 @@ export async function applyToCourse(courseId: string, windowIds: string[]) {
 		}
 
 		const matchedSlot = slots.find(
-			(slot) => slot.start_time === selection.start_time && slot.end_time === selection.end_time
+			(slot) =>
+				slot.start_time === selection.start_time &&
+				slot.end_time === selection.end_time
 		);
 		if (!matchedSlot) {
 			throw new Error('선택한 시간이 수업 길이와 맞지 않습니다.');
@@ -86,15 +100,26 @@ export async function applyToCourse(courseId: string, windowIds: string[]) {
 				day_of_week: matchedSlot.day_of_week,
 				start_time: matchedSlot.start_time,
 				end_time: matchedSlot.end_time,
-				instructor_id: matchedSlot.instructor_id || baseWindow.instructor_id || null,
-				instructor_name: matchedSlot.instructor_name || baseWindow.instructor_name || null,
+				instructor_id:
+					matchedSlot.instructor_id ||
+					baseWindow.instructor_id ||
+					null,
+				instructor_name:
+					matchedSlot.instructor_name ||
+					baseWindow.instructor_name ||
+					null,
 				capacity: course.capacity,
 			})
-			.select('id, day_of_week, start_time, end_time, instructor_id, instructor_name')
+			.select(
+				'id, day_of_week, start_time, end_time, instructor_id, instructor_name'
+			)
 			.single();
 
 		if (error || !newWindow) {
-			throw new Error('선택한 시간 저장에 실패했습니다. 다시 시도해주세요.');
+			console.error(error);
+			throw new Error(
+				'선택한 시간 저장에 실패했습니다. 다시 시도해주세요.'
+			);
 		}
 
 		slotCache.push(newWindow);
@@ -103,14 +128,17 @@ export async function applyToCourse(courseId: string, windowIds: string[]) {
 
 	const windowSet = Array.from(new Set(finalWindowIds));
 
-	const { data: application, error } = await supabase
+	const { data: application, error: applicationsErr } = await supabase
 		.from('applications')
 		.insert({ course_id: courseId, student_id: session!.user.id })
 		.select('id')
 		.single();
 
-	if (error) {
-		console.error(error);
+	if (applicationsErr) {
+		console.error({ applicationsErr });
+		if (applicationsErr?.code === '23505') {
+			throw new Error('이미 이 수업에 신청하셨습니다.');
+		}
 	}
 
 	if (application?.id) {
@@ -123,25 +151,32 @@ export async function applyToCourse(courseId: string, windowIds: string[]) {
 			.insert(choiceRows);
 		if (choiceError) {
 			console.error('신청 시간 저장 실패', choiceError);
-			throw new Error('선택한 시간 저장에 실패했습니다. 다시 시도해주세요.');
+			throw new Error(
+				'선택한 시간 저장에 실패했습니다. 다시 시도해주세요.'
+			);
 		}
 	}
 
-  try {
-    const from = new Date();
-    const to = new Date();
-    to.setDate(from.getDate() + 14);
+	try {
+		const from = new Date();
+		const to = new Date();
+		to.setDate(from.getDate() + 14);
 
-    await runMatching({ courseId, from: from.toISOString(), to: to.toISOString(), requestedBy: session!.user.id });
-  } catch (error) {
-    console.error("자동 매칭 실행 실패", error);
-  }
+		await runMatching({
+			courseId,
+			from: from.toISOString(),
+			to: to.toISOString(),
+			requestedBy: session!.user.id,
+		});
+	} catch (error) {
+		console.error('자동 매칭 실행 실패', error);
+	}
 
-  revalidatePath(`/student/courses/${courseId}`);
-  revalidatePath("/student/applications");
-  revalidatePath(`/admin/courses/${courseId}`);
-  revalidatePath("/admin/courses");
-  return application?.id;
+	revalidatePath(`/student/courses/${courseId}`);
+	revalidatePath('/student/applications');
+	revalidatePath(`/admin/courses/${courseId}`);
+	revalidatePath('/admin/courses');
+	return application?.id;
 }
 
 export async function cancelApplication(applicationId: string) {

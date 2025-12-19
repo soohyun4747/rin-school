@@ -69,7 +69,7 @@ function validateTimeWindows(windows: TimeWindowInput[]) {
 
 export type CourseCreationResult = { success: boolean; error?: string };
 
-export async function createCourse(formData: FormData): Promise<CourseCreationResult> {
+export async function createCourse(_prevState: CourseCreationResult, formData: FormData): Promise<CourseCreationResult> {
 	const { session, profile } = await requireSession();
 	requireRole(profile.role, ['admin']);
 	const supabase = await getSupabaseServerClient();
