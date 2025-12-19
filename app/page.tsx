@@ -24,11 +24,10 @@ export default async function HomePage() {
 							contact
 						</p>
 						<h2 className='text-xl font-bold text-slate-900'>
-							팀과 바로 연결되어 상담을 진행하세요
+							궁금한게 있으신가요?
 						</h2>
 						<p className='text-sm text-slate-600'>
-							문의 폼을 통해 수업 소개 자료와 상세 프로세스를
-							안내드립니다.
+							문의 폼을 통해 궁금한 점을 물어보세요
 						</p>
 					</div>
 					<Link

@@ -17,7 +17,7 @@ export function SiteFooter() {
           </span>
           <div>
             <p className='font-semibold text-slate-800'>린스쿨</p>
-            <p className='text-slate-500'>학생과 강사를 연결하는 온라인 수업 매칭 플랫폼</p>
+            <p className='text-slate-500'>글로벌 온라인 수업</p>
           </div>
         </div>
         <div className='flex flex-wrap items-center gap-4'>
