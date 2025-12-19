@@ -6,9 +6,17 @@ import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { requireSession, requireRole } from "@/lib/auth";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/time";
-import { removeStudentFromMatch } from "@/app/actions/admin";
+import {
+  addStudentToMatch,
+  confirmMatchSchedule,
+  generateScheduleProposals,
+  removeStudentFromMatch,
+  updateProposedMatch,
+} from "@/app/actions/admin";
 import type { ICourse } from "../page";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 
 type ApplicationRow = {
   id: string;
@@ -108,6 +116,23 @@ export default async function AdminCourseDetailPage({
   const windowLabel = (w: WindowRow) => `${days[w.day_of_week]} ${w.start_time} - ${w.end_time}`;
   const instructorLabel = (w: { instructor_id: string | null; instructor_name: string | null }) =>
     w.instructor_id ? profileMap.get(w.instructor_id)?.name ?? w.instructor_id : w.instructor_name || "미지정";
+  const badgeVariant = (status: string): "info" | "success" | "warning" | "danger" => {
+    if (status === "confirmed") return "success";
+    if (status === "proposed") return "warning";
+    if (status === "cancelled") return "danger";
+    return "info";
+  };
+  const toDateTimeLocalValue = (iso: string) => {
+    const date = new Date(iso);
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  };
+  const proposedMatches = matchRows.filter((m) => m.status === "proposed");
+  const finalizedMatches = matchRows.filter((m) => m.status !== "proposed");
+  const studentOptions = Array.from(new Set(applicationRows.map((app) => app.student_id))).map((id) => ({
+    id,
+    name: profileMap.get(id)?.name ?? id,
+  }));
 
   return (
     <div className="space-y-6">
@@ -188,8 +213,8 @@ export default async function AdminCourseDetailPage({
           <CardTitle>매칭 결과</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
-          {matchRows.length === 0 && <p className="text-slate-600">매칭된 일정이 없습니다.</p>}
-          {matchRows.map((match) => (
+          {finalizedMatches.length === 0 && <p className="text-slate-600">매칭된 일정이 없습니다.</p>}
+          {finalizedMatches.map((match) => (
             <div key={match.id} className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
@@ -203,7 +228,7 @@ export default async function AdminCourseDetailPage({
                       : match.instructor_name ?? "미지정"}
                   </p>
                 </div>
-                <Badge variant="success">{match.status}</Badge>
+                <Badge variant={badgeVariant(match.status)}>{match.status}</Badge>
               </div>
 
               <div className="mt-3 space-y-2">
@@ -240,12 +265,116 @@ export default async function AdminCourseDetailPage({
         </CardContent>
       </Card>
       <Card>
-        <CardHeader>
-          <CardTitle>가능한 시간표 생성</CardTitle>
-          <Button>생성하기</Button>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <CardTitle>가능한 시간표 생성</CardTitle>
+            <p className="text-sm text-slate-600">
+              신청한 시간대와 정원을 기준으로 추천 시간표를 만들고 수정한 뒤 확정할 수 있습니다.
+            </p>
+          </div>
+          <form action={generateScheduleProposals.bind(null, course.id)}>
+            <Button type="submit">생성하기</Button>
+          </form>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          
+        <CardContent className="space-y-4 text-sm">
+          {proposedMatches.length === 0 && (
+            <p className="text-slate-600">아직 제안된 시간표가 없습니다. 생성하기 버튼을 눌러 추천 일정을 받아보세요.</p>
+          )}
+          {proposedMatches.map((match) => {
+            const assignedIds = new Set(match.match_students.map((ms) => ms.student_id));
+            const addableStudents = studentOptions.filter((s) => !assignedIds.has(s.id));
+            return (
+              <div key={match.id} className="space-y-3 rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {formatDateTime(new Date(match.slot_start_at))} ~ {formatDateTime(new Date(match.slot_end_at))}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      강사:{" "}
+                      {match.instructor_id
+                        ? profileMap.get(match.instructor_id)?.name ?? match.instructor_id
+                        : match.instructor_name ?? "미지정"}
+                    </p>
+                  </div>
+                  <Badge variant={badgeVariant(match.status)}>제안됨</Badge>
+                </div>
+                <form
+                  action={updateProposedMatch.bind(null, course.id)}
+                  className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+                >
+                  <input type="hidden" name="match_id" value={match.id} />
+                  <label className="space-y-1 text-xs font-semibold text-slate-700">
+                    <span className="block">시작</span>
+                    <Input type="datetime-local" name="slot_start_at" defaultValue={toDateTimeLocalValue(match.slot_start_at)} />
+                  </label>
+                  <label className="space-y-1 text-xs font-semibold text-slate-700">
+                    <span className="block">종료</span>
+                    <Input type="datetime-local" name="slot_end_at" defaultValue={toDateTimeLocalValue(match.slot_end_at)} />
+                  </label>
+                  <Button type="submit" className="w-full sm:w-auto">
+                    시간 저장
+                  </Button>
+                </form>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-slate-700">배치된 학생</p>
+                  {match.match_students.length === 0 ? (
+                    <p className="text-xs text-slate-600">배치된 학생이 없습니다.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {match.match_students.map((ms) => (
+                        <li
+                          key={ms.student_id}
+                          className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2"
+                        >
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900">
+                              {profileMap.get(ms.student_id)?.name ?? ms.student_id}
+                            </p>
+                            <p className="text-xs text-slate-600">
+                              {profileMap.get(ms.student_id)?.phone ?? "연락처 없음"}
+                            </p>
+                          </div>
+                          <form action={removeStudentFromMatch.bind(null, course.id, match.id, ms.student_id)}>
+                            <ConfirmSubmitButton variant="ghost" className="text-xs text-red-600">
+                              배정 해제
+                            </ConfirmSubmitButton>
+                          </form>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <form
+                  action={addStudentToMatch.bind(null, course.id)}
+                  className="flex flex-col gap-2 sm:flex-row sm:items-center"
+                >
+                  <input type="hidden" name="match_id" value={match.id} />
+                  <Select name="student_id" className="sm:w-72" required>
+                    <option value="">학생 선택</option>
+                    {addableStudents.map((student) => (
+                      <option key={student.id} value={student.id}>
+                        {student.name}
+                      </option>
+                    ))}
+                  </Select>
+                  <Button type="submit" disabled={addableStudents.length === 0} className="sm:w-auto">
+                    학생 추가
+                  </Button>
+                </form>
+
+                <div className="flex justify-end">
+                  <form action={confirmMatchSchedule.bind(null, course.id, match.id)}>
+                    <Button type="submit" variant="secondary" disabled={match.match_students.length === 0}>
+                      확정
+                    </Button>
+                  </form>
+                </div>
+              </div>
+            );
+          })}
         </CardContent>
       </Card>
 

@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { requireSession, requireRole } from '@/lib/auth';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { runMatching } from '@/lib/matching';
-import { splitWindowByDuration } from '@/lib/time';
+import { combineDayAndTime, splitWindowByDuration } from '@/lib/time';
 
 type TimeWindowInput = {
 	day_of_week: number;
@@ -306,6 +306,227 @@ export async function runMatchingAction(
 	} catch (error) {
 		return { error: (error as Error).message };
 	}
+}
+
+export async function generateScheduleProposals(courseId: string) {
+	const { profile } = await requireSession();
+	requireRole(profile.role, ['admin']);
+	const supabase = await getSupabaseServerClient();
+
+	const [{ data: course }, { data: windows }, { data: applications }] =
+		await Promise.all([
+			supabase
+				.from('courses')
+				.select('id, duration_minutes, capacity')
+				.eq('id', courseId)
+				.single(),
+			supabase
+				.from('course_time_windows')
+				.select(
+					'id, day_of_week, start_time, end_time, instructor_id, instructor_name, capacity'
+				)
+				.eq('course_id', courseId),
+			supabase
+				.from('applications')
+				.select(
+					'id, student_id, created_at, status, application_time_choices(window_id)'
+				)
+				.eq('course_id', courseId)
+				.order('created_at', { ascending: true }),
+		]);
+
+	if (!course) {
+		throw new Error('수업 정보를 불러오지 못했습니다.');
+	}
+
+	await supabase
+		.from('matches')
+		.delete()
+		.eq('course_id', courseId)
+		.eq('status', 'proposed');
+
+	const pendingApplications =
+		(applications ?? []).filter((app) => app.status === 'pending');
+	const sortedWindows =
+		windows
+			?.slice()
+			.sort((a, b) => {
+				if (a.day_of_week !== b.day_of_week)
+					return a.day_of_week - b.day_of_week;
+				return a.start_time.localeCompare(b.start_time);
+			}) ?? [];
+
+	const assignedStudents = new Set<string>();
+	const reference = new Date();
+
+	for (const window of sortedWindows) {
+		const candidates = pendingApplications.filter((app) => {
+			const isInterested = (app.application_time_choices ?? []).some(
+				(choice) => choice.window_id === window.id
+			);
+			return isInterested && !assignedStudents.has(app.student_id);
+		});
+
+		if (candidates.length === 0) continue;
+
+		const slotStart = combineDayAndTime(
+			window.day_of_week,
+			window.start_time,
+			reference
+		);
+		const slotEnd = new Date(
+			slotStart.getTime() + course.duration_minutes * 60000
+		);
+
+		const { data: match, error } = await supabase
+			.from('matches')
+			.insert({
+				course_id: courseId,
+				slot_start_at: slotStart.toISOString(),
+				slot_end_at: slotEnd.toISOString(),
+				instructor_id: window.instructor_id,
+				instructor_name: window.instructor_name,
+				status: 'proposed',
+				updated_by: profile.id,
+				note: '자동 추천 일정',
+			})
+			.select('id')
+			.single();
+
+		if (error || !match?.id) continue;
+
+		const capacity = window.capacity ?? course.capacity;
+		const selected = candidates.slice(0, capacity);
+		selected.forEach((app) => assignedStudents.add(app.student_id));
+
+		if (selected.length > 0) {
+			await supabase.from('match_students').insert(
+				selected.map((app) => ({
+					match_id: match.id,
+					student_id: app.student_id,
+				}))
+			);
+		}
+	}
+
+	revalidatePath(`/admin/courses/${courseId}`);
+}
+
+export async function updateProposedMatch(courseId: string, formData: FormData) {
+	const { profile } = await requireSession();
+	requireRole(profile.role, ['admin']);
+	const supabase = await getSupabaseServerClient();
+
+	const matchId = String(formData.get('match_id') ?? '');
+	const start = String(formData.get('slot_start_at') ?? '');
+	const end = String(formData.get('slot_end_at') ?? '');
+
+	if (!matchId || !start || !end) {
+		throw new Error('시간 정보를 모두 입력해주세요.');
+	}
+
+	const startAt = new Date(start);
+	const endAt = new Date(end);
+
+	if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
+		throw new Error('시간 형식이 올바르지 않습니다.');
+	}
+	if (startAt >= endAt) {
+		throw new Error('시작 시간은 종료 시간보다 앞서야 합니다.');
+	}
+
+	await supabase
+		.from('matches')
+		.update({
+			slot_start_at: startAt.toISOString(),
+			slot_end_at: endAt.toISOString(),
+			updated_by: profile.id,
+			status: 'proposed',
+		})
+		.eq('id', matchId);
+
+	revalidatePath(`/admin/courses/${courseId}`);
+}
+
+export async function addStudentToMatch(courseId: string, formData: FormData) {
+	const { profile } = await requireSession();
+	requireRole(profile.role, ['admin']);
+	const supabase = await getSupabaseServerClient();
+
+	const matchId = String(formData.get('match_id') ?? '');
+	const studentId = String(formData.get('student_id') ?? '');
+
+	if (!matchId || !studentId) {
+		throw new Error('학생과 매칭 정보를 확인해주세요.');
+	}
+
+	const { data: match } = await supabase
+		.from('matches')
+		.select('id, course_id, status')
+		.eq('id', matchId)
+		.single();
+
+	if (!match || match.course_id !== courseId) {
+		throw new Error('매칭을 찾을 수 없습니다.');
+	}
+
+	const { error } = await supabase
+		.from('match_students')
+		.insert({ match_id: matchId, student_id: studentId });
+
+	if (!error && match.status === 'confirmed') {
+		await supabase
+			.from('applications')
+			.update({ status: 'matched' })
+			.eq('course_id', courseId)
+			.eq('student_id', studentId);
+	}
+
+	revalidatePath(`/admin/courses/${courseId}`);
+}
+
+export async function confirmMatchSchedule(courseId: string, matchId: string) {
+	const { profile } = await requireSession();
+	requireRole(profile.role, ['admin']);
+	const supabase = await getSupabaseServerClient();
+
+	const { data: match } = await supabase
+		.from('matches')
+		.select('course_id')
+		.eq('id', matchId)
+		.single();
+
+	if (!match || match.course_id !== courseId) {
+		throw new Error('매칭을 찾을 수 없습니다.');
+	}
+
+	const { data: students } = await supabase
+		.from('match_students')
+		.select('student_id')
+		.eq('match_id', matchId);
+
+	await supabase
+		.from('matches')
+		.update({
+			status: 'confirmed',
+			updated_by: profile.id,
+			updated_at: new Date().toISOString(),
+		})
+		.eq('id', matchId);
+
+	if (students?.length) {
+		await supabase
+			.from('applications')
+			.update({ status: 'matched' })
+			.eq('course_id', courseId)
+			.in(
+				'student_id',
+				students.map((s) => s.student_id)
+			);
+	}
+
+	revalidatePath(`/admin/courses/${courseId}`);
+	revalidatePath('/admin/courses');
 }
 
 export async function sendEmailBatch(formData: FormData) {

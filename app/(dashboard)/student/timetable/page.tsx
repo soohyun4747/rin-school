@@ -37,6 +37,10 @@ export default async function StudentTimetablePage() {
     : { data: [] as { id: string; name: string | null }[] };
   const instructorMap = new Map((instructors ?? []).map((p) => [p.id, p.name]));
 
+  const visibleMatches = matchRows.filter(
+    (row) => row.match && row.match.status !== "proposed" && row.match.status !== "cancelled"
+  );
+
   return (
     <div className="space-y-4">
       <Card>
@@ -44,8 +48,8 @@ export default async function StudentTimetablePage() {
           <CardTitle>확정된 시간표</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
-          {matchRows.length === 0 && <p className="text-slate-600">아직 확정된 매칭이 없습니다.</p>}
-          {matchRows.map((row) => (
+          {visibleMatches.length === 0 && <p className="text-slate-600">아직 확정된 매칭이 없습니다.</p>}
+          {visibleMatches.map((row) => (
             <div key={row.id} className="rounded-md border border-slate-200 px-4 py-3">
               <p className="text-sm font-semibold text-slate-900">{row.match?.courses?.title ?? "수업"}</p>
               <p className="text-xs text-slate-600">{formatDateTime(new Date(row.match?.slot_start_at))}</p>
