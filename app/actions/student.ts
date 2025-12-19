@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { requireSession, requireRole } from '@/lib/auth';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { runMatching } from '@/lib/matching';
+import { toHHMM } from '@/lib/time';
 
 type SlotSelection = { windowId: string; start_time: string; end_time: string };
 
@@ -55,9 +56,12 @@ export async function applyToCourse(courseId: string, windowIds: string[]) {
 			throw new Error('존재하지 않는 시간이 포함되어 있습니다.');
 		}
 
+		console.log({ baseWindow });
+		console.log({ selection });
+
 		const isExactSlot =
-			baseWindow.start_time === selection.start_time &&
-			baseWindow.end_time === selection.end_time;
+			toHHMM(baseWindow.start_time) === toHHMM(selection.start_time) &&
+			toHHMM(baseWindow.end_time) === toHHMM(selection.end_time);
 
 		if (!isExactSlot) {
 			throw new Error('선택한 시간이 수업 길이와 맞지 않습니다.');

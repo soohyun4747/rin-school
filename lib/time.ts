@@ -190,3 +190,5 @@ export function generateWindowOccurrences(
 
   return occurrences.sort((a, b) => a.start.getTime() - b.start.getTime());
 }
+
+export const toHHMM = (t: string) => t.slice(0, 5);
