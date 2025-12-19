@@ -99,6 +99,14 @@ export function formatDateTime(date: Date) {
   });
 }
 
+export function formatDayTime(date: Date) {
+  return date.toLocaleString("ko-KR", {
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function getNextDateForDay(dayOfWeek: number, reference: Date, time: string) {
   const [hour, minute] = time.split(":").map(Number);
   const target = new Date(reference);

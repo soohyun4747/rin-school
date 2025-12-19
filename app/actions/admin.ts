@@ -351,6 +351,23 @@ export type ScheduleProposalResult = {
 	generated_at?: string;
 };
 
+function calculateAge(birthdate: string | null) {
+	if (!birthdate) return null;
+	const date = new Date(birthdate);
+	if (Number.isNaN(date.getTime())) return null;
+
+	const today = new Date();
+	let age = today.getFullYear() - date.getFullYear();
+	const monthDiff = today.getMonth() - date.getMonth();
+	if (
+		monthDiff < 0 ||
+		(monthDiff === 0 && today.getDate() < date.getDate())
+	) {
+		age -= 1;
+	}
+	return age;
+}
+
 export async function generateScheduleProposals(
 	courseId: string
 ): Promise<ScheduleProposalResult> {
@@ -387,6 +404,21 @@ export async function generateScheduleProposals(
 	const pendingApplications = (applications ?? []).filter(
 		(app) => app.status === 'pending'
 	);
+
+	const pendingStudentIds = Array.from(
+		new Set(pendingApplications.map((app) => app.student_id))
+	);
+	const { data: profileRows } = pendingStudentIds.length
+		? await supabase
+				.from('profiles')
+				.select('id, birthdate')
+				.in('id', pendingStudentIds)
+		: { data: [] as { id: string; birthdate: string | null }[] };
+
+	const profileMap = new Map(
+		(profileRows ?? []).map((p) => [p.id, p.birthdate])
+	);
+
 	const sortedWindows =
 		windows?.slice().sort((a, b) => {
 			if (a.day_of_week !== b.day_of_week)
@@ -396,13 +428,31 @@ export async function generateScheduleProposals(
 
 	const reference = new Date();
 	const proposals: ScheduleProposal[] = [];
+	const assignedStudents = new Set<string>();
 
 	for (const window of sortedWindows) {
-		const candidates = pendingApplications.filter((app) =>
-			(app.application_time_choices ?? []).some(
-				(choice) => choice.window_id === window.id
+		const candidates = pendingApplications
+			.filter(
+				(app) =>
+					!assignedStudents.has(app.student_id) &&
+					(app.application_time_choices ?? []).some(
+						(choice) => choice.window_id === window.id
+					)
 			)
-		);
+			.map((app) => ({
+				application: app,
+				age: calculateAge(profileMap.get(app.student_id) ?? null),
+			}))
+			.sort((a, b) => {
+				const createdDiff =
+					new Date(a.application.created_at).getTime() -
+					new Date(b.application.created_at).getTime();
+				if (createdDiff !== 0) return createdDiff;
+				if (a.age === null && b.age === null) return 0;
+				if (a.age === null) return 1;
+				if (b.age === null) return -1;
+				return b.age - a.age;
+			});
 
 		if (candidates.length === 0) continue;
 
@@ -418,6 +468,10 @@ export async function generateScheduleProposals(
 		const capacity = window.capacity ?? course.capacity;
 		const selected = candidates.slice(0, capacity);
 
+		selected.forEach((item) =>
+			assignedStudents.add(item.application.student_id)
+		);
+
 		proposals.push({
 			window_id: window.id,
 			slot_start_at: slotStart.toISOString(),
@@ -425,9 +479,9 @@ export async function generateScheduleProposals(
 			instructor_id: window.instructor_id,
 			instructor_name: window.instructor_name,
 			capacity,
-			students: selected.map((app) => ({
-				student_id: app.student_id,
-				application_id: app.id,
+			students: selected.map((entry) => ({
+				student_id: entry.application.student_id,
+				application_id: entry.application.id,
 			})),
 		});
 	}

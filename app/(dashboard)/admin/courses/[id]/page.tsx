@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ConfirmSubmitButton } from '@/components/ui/confirm-submit-button';
 import { requireSession, requireRole } from '@/lib/auth';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { formatDateTime } from '@/lib/time';
+import { formatDateTime, formatDayTime } from '@/lib/time';
 import {
 	addStudentToMatch,
 	removeStudentFromMatch,
@@ -295,11 +295,11 @@ export default async function AdminCourseDetailPage({
 								<div className='flex flex-wrap items-center justify-between gap-2'>
 									<div>
 										<p className='text-sm font-semibold text-slate-900'>
-											{formatDateTime(
+											{formatDayTime(
 												new Date(match.slot_start_at)
 											)}{' '}
 											~{' '}
-											{formatDateTime(
+											{formatDayTime(
 												new Date(match.slot_end_at)
 											)}
 										</p>
