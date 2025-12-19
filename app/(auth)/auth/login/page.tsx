@@ -24,6 +24,8 @@ export default function LoginPage() {
 			setError(signInError.message);
 			return;
 		}
+    console.log(data);
+    
 		if (data.user.user_metadata.role === 'admin') {
 			router.push('/admin/courses');
 		}
@@ -33,7 +35,6 @@ export default function LoginPage() {
 		if (data.user.user_metadata.role === 'instructor') {
 			router.push('/instructor/availability');
 		}
-		return;
 	};
 
 	return (
