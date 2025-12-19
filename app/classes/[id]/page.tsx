@@ -16,10 +16,11 @@ export default async function StudentCourseDetail({
 	params: Promise<{ id: string }>;
 }) {
 	const { profile } = await requireSession();
-	requireRole(profile.role, ['student']);
+	requireRole(profile.role, ['student', 'instructor', 'admin']);
 
 	const { id } = await params;
 
+	const isStudent = profile.role === 'student';
 	const supabase = await getSupabaseServerClient();
 
 	const { data } = await supabase
@@ -46,17 +47,21 @@ export default async function StudentCourseDetail({
 		console.error({ error });
 	}
 
-	const { data: existingApps } = await supabase
-		.from('applications')
-		.select('id, status')
-		.eq('course_id', course.id)
-		.eq('student_id', profile.id)
-		.order('created_at', { ascending: false })
-		.limit(1);
+	const { data: existingApps } = isStudent
+		? await supabase
+				.from('applications')
+				.select('id, status')
+				.eq('course_id', course.id)
+				.eq('student_id', profile.id)
+				.order('created_at', { ascending: false })
+				.limit(1)
+		: { data: [] as { id: string; status: string }[] };
 
-	const existingApplication = existingApps?.[0] ?? null;
+	const existingApplication = (existingApps ?? [])[0] ?? null;
 	const hasActiveApplication =
-		existingApplication && existingApplication.status !== 'cancelled';
+		isStudent &&
+		existingApplication &&
+		existingApplication.status !== 'cancelled';
 
 	async function action(formData: FormData) {
 		'use server';
@@ -193,80 +198,129 @@ export default async function StudentCourseDetail({
 						))}
 					</CardContent>
 				</Card> */}
-				<Card>
-					<CardHeader>
-						<CardTitle>신청 시간 선택</CardTitle>
-					</CardHeader>
-					<CardContent className='space-y-4'>
-						<form
-							action={action}
-							className='space-y-4'>
-							<div className='space-y-3'>
-								<p className='text-sm text-slate-700'>
-									가능한 한국 시간대를 선택해주세요. 여러 개를
-									선택할 수 있습니다.
-								</p>
-								{slotOptions.length === 0 && (
-									<p className='text-slate-600'>
-										관리자가 아직 시간을 등록하지
-										않았습니다.
+				{isStudent ? (
+					<Card>
+						<CardHeader>
+							<CardTitle>신청 시간 선택</CardTitle>
+						</CardHeader>
+						<CardContent className='space-y-4'>
+							<form
+								action={action}
+								className='space-y-4'>
+								<div className='space-y-3'>
+									<p className='text-sm text-slate-700'>
+										가능한 한국 시간대를 선택해주세요. 여러
+										개를 선택할 수 있습니다.
 									</p>
-								)}
-								{Array.from(slotsByDay.entries()).map(
-									([dayIndex, slots]) => (
-										<div
-											key={dayIndex}
-											className='space-y-2 rounded-lg border border-slate-200 p-3'>
-											<p className='text-sm font-semibold text-slate-800'>
-												{days[dayIndex]}
-											</p>
-											<div className='space-y-2'>
-												{slots.map((slot) => (
-													<label
-														key={slot.value}
-														className='flex items-center justify-between rounded-md border border-slate-100 px-3 py-2 text-sm'>
-														<div className='flex items-center gap-3'>
-															<input
-																type='checkbox'
-																name='window_ids'
-																value={slot.value}
-																className='h-4 w-4 accent-[var(--primary)]'
-																disabled={hasActiveApplication}
-															/>
-															<div>
-																<p className='font-semibold text-slate-900'>
-																	{slot.start_time} - {slot.end_time}
-																</p>
-																<p className='text-xs text-slate-600'>
-																	강사: {slot.instructor_label} · 정원 {course.capacity}
-																	명
-																</p>
+									{slotOptions.length === 0 && (
+										<p className='text-slate-600'>
+											관리자가 아직 시간을 등록하지
+											않았습니다.
+										</p>
+									)}
+									{Array.from(slotsByDay.entries()).map(
+										([dayIndex, slots]) => (
+											<div
+												key={dayIndex}
+												className='space-y-2 rounded-lg border border-slate-200 p-3'>
+												<p className='text-sm font-semibold text-slate-800'>
+													{days[dayIndex]}
+												</p>
+												<div className='space-y-2'>
+													{slots.map((slot) => (
+														<label
+															key={slot.value}
+															className='flex items-center justify-between rounded-md border border-slate-100 px-3 py-2 text-sm'>
+															<div className='flex items-center gap-3'>
+																<input
+																	type='checkbox'
+																	name='window_ids'
+																	value={slot.value}
+																	className='h-4 w-4 accent-[var(--primary)]'
+																	disabled={
+																		hasActiveApplication
+																	}
+																/>
+																<div>
+																	<p className='font-semibold text-slate-900'>
+																		{slot.start_time} - {slot.end_time}
+																	</p>
+																	<p className='text-xs text-slate-600'>
+																		강사: {slot.instructor_label} · 정원 {course.capacity}
+																		명
+																	</p>
+																</div>
 															</div>
-														</div>
-													</label>
-												))}
+														</label>
+													))}
+												</div>
 											</div>
-										</div>
-									)
-								)}
-								<p className='text-xs text-slate-600'>
-									선택한 시간 기준으로 신청이 접수됩니다.
+										)
+									)}
+									<p className='text-xs text-slate-600'>
+										선택한 시간 기준으로 신청이 접수됩니다.
+									</p>
+								</div>
+								<Button
+									type='submit'
+									className='w-full'
+									disabled={
+										slotOptions.length === 0 ||
+										hasActiveApplication
+									}>
+									{hasActiveApplication
+										? '이미 신청 완료됨'
+										: '신청하기'}
+								</Button>
+							</form>
+						</CardContent>
+					</Card>
+				) : (
+					<Card>
+						<CardHeader>
+							<CardTitle>신청 시간 확인</CardTitle>
+						</CardHeader>
+						<CardContent className='space-y-3 text-sm'>
+							<p className='text-slate-700'>
+								관리자와 강사는 신청 없이 시간 정보를 확인할 수
+								있습니다. 신청은 학생 계정으로만 가능합니다.
+							</p>
+							{slotOptions.length === 0 && (
+								<p className='text-slate-600'>
+									등록된 시간이 없습니다.
 								</p>
-							</div>
-							<Button
-								type='submit'
-								className='w-full'
-								disabled={
-									slotOptions.length === 0 ||
-									hasActiveApplication
-								}>
-								{hasActiveApplication
-									? '이미 신청 완료됨'
-									: '신청하기'}
-							</Button>
-						</form>
-					</CardContent>
-				</Card>
+							)}
+							{Array.from(slotsByDay.entries()).map(
+								([dayIndex, slots]) => (
+									<div
+										key={dayIndex}
+										className='space-y-2 rounded-lg border border-slate-200 p-3'>
+										<p className='text-sm font-semibold text-slate-800'>
+											{days[dayIndex]}
+										</p>
+										<div className='space-y-2'>
+											{slots.map((slot) => (
+												<div
+													key={slot.value}
+													className='flex items-center justify-between rounded-md border border-slate-100 px-3 py-2 text-sm'>
+													<div>
+														<p className='font-semibold text-slate-900'>
+															{slot.start_time} - {slot.end_time}
+														</p>
+														<p className='text-xs text-slate-600'>
+															강사: {slot.instructor_label} · 정원 {course.capacity}
+															명
+														</p>
+													</div>
+												</div>
+											))}
+										</div>
+									</div>
+								)
+							)}
+						</CardContent>
+					</Card>
+				)}
 			</div>
 		</div>
 	);
