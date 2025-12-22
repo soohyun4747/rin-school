@@ -24,8 +24,6 @@ export async function fetchLandingImages(): Promise<LandingImage[]> {
       return [];
     }
 
-    console.log({data});
-
     const withUrls =
       data?.map((file) => {
         const { data: urlData } = supabase.storage.from("landing-images").getPublicUrl(`landing/${file.name}`);
@@ -36,9 +34,6 @@ export async function fetchLandingImages(): Promise<LandingImage[]> {
           createdAt: file.created_at,
         };
       }) ?? [];
-
-    console.log({withUrls});
-    
 
     return withUrls.sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;

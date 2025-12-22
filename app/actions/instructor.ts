@@ -15,11 +15,15 @@ export async function addInstructorSubject(formData: FormData) {
 		throw new Error('과목과 학년을 입력해주세요.');
 	}
 
-	await supabase.from('instructor_subjects').insert({
+	const { error } = await supabase.from('instructor_subjects').insert({
 		instructor_id: profile.id,
 		subject,
 		grade_range: gradeRange,
 	});
+
+	if (error) {
+		console.error({ error });
+	}
 
 	revalidatePath('/instructor/subjects');
 }

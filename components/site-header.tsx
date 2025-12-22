@@ -20,9 +20,6 @@ export async function SiteHeader() {
 		}
 	}
 
-  console.log({profile});
-
-
 	const menuByRole: Record<Role, { href: string; label: string }[]> = {
 		admin: [
 			{ href: '/admin/courses', label: '수업 관리' },

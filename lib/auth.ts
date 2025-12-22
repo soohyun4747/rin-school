@@ -13,8 +13,6 @@ export async function getSessionAndProfile() {
 		error: userError,
 	} = await supabase.auth.getUser();
 
-	console.log({ user });
-
 	if (userError || !user) {
 		return { session: null, profile: null } as const;
 	}

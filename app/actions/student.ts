@@ -69,9 +69,6 @@ export async function applyToCourse(courseId: string, windowIds: string[]) {
 			throw new Error('존재하지 않는 시간이 포함되어 있습니다.');
 		}
 
-		console.log({ baseWindow });
-		console.log({ selection });
-
 		const isExactSlot =
 			toHHMM(baseWindow.start_time) === toHHMM(selection.start_time) &&
 			toHHMM(baseWindow.end_time) === toHHMM(selection.end_time);
