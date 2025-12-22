@@ -230,6 +230,23 @@ export interface Database {
         };
         Update: Partial<Omit<Database["public"]["Tables"]["email_batches"]["Row"], "id" | "created_by" | "created_at">>;
       };
+      admin_notification_emails: {
+        Row: {
+          id: string;
+          email: string;
+          label: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          label?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Omit<Database["public"]["Tables"]["admin_notification_emails"]["Row"], "id" | "created_at">>;
+      };
       matching_runs: {
         Row: {
           id: string;

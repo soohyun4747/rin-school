@@ -26,6 +26,7 @@ alter table public.match_students enable row level security;
 alter table public.email_batches enable row level security;
 alter table public.matching_runs enable row level security;
 alter table public.user_consents enable row level security;
+alter table public.admin_notification_emails enable row level security;
 
 -- Profiles
 create policy "profiles_self_access" on public.profiles
@@ -90,3 +91,7 @@ create policy "matching_runs_admin" on public.matching_runs
 -- User consents
 create policy "user_consents_owner" on public.user_consents
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Admin notification emails
+create policy "admin_notification_emails_admin" on public.admin_notification_emails
+  using (public.is_admin()) with check (public.is_admin());

@@ -181,6 +181,7 @@ export default function SignupPage() {
 		setMessage(null);
 
 		try {
+			const guardianToken = crypto.randomUUID();
 			const trimmedPhone = phone.trim();
 			const trimmedGuardianEmail = guardianEmail.trim();
 			const supabase = getSupabaseBrowserClient();
@@ -205,6 +206,10 @@ export default function SignupPage() {
 					email,
 					password,
 					options: {
+						emailRedirectTo: `${
+							process.env.NEXT_PUBLIC_APP_URL ||
+							window.location.origin
+						}/auth/login`,
 						data: {
 							role,
 							name,
@@ -212,6 +217,16 @@ export default function SignupPage() {
 							birthdate: birthdate || null,
 							kakao_id: kakaoId || null,
 							country: country || null,
+							age_confirmed: ageConfirmed,
+							guardian_email: ageConfirmed
+								? null
+								: trimmedGuardianEmail,
+							guardian_status: ageConfirmed
+								? 'not_required'
+								: 'pending',
+							guardian_token: ageConfirmed
+								? null
+								: guardianToken,
 						},
 					},
 				});
@@ -223,62 +238,25 @@ export default function SignupPage() {
 			}
 
 			const userId = signUpData.user?.id;
-			if (userId && signUpData.session) {
-				const { error: profileError } = await supabase
-					.from('profiles')
-					.update({
-						phone: trimmedPhone || null,
-						name,
-						role,
-						birthdate: birthdate || null,
-						kakao_id: kakaoId || null,
-						country: country || null,
-						email,
-					})
-					.eq('id', userId);
-
-				if (profileError) {
-					console.error({profileError});
-					setError(
-						'프로필 정보를 저장하는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.'
-					);
-					return;
-				}
-
-				const guardianToken = crypto.randomUUID();
-				const { error: consentError } = await supabase
-					.from('user_consents')
-					.insert({
-						user_id: userId,
-						age_confirmed: ageConfirmed,
-						guardian_email: ageConfirmed ? null : trimmedGuardianEmail,
-						guardian_status: ageConfirmed ? 'not_required' : 'pending',
-						guardian_token: ageConfirmed ? null : guardianToken,
-					});
-
-				if (consentError) {
-					console.error({consentError});
-					setError(
-						'동의 정보를 저장하는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.'
-					);
-					return;
-				}
-
-				if (!ageConfirmed && trimmedGuardianEmail) {
-					const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-					const confirmUrl = `${baseUrl}/api/guardian-consent?user_id=${encodeURIComponent(userId)}&token=${encodeURIComponent(guardianToken)}`;
-					await fetch('/api/send-guardian-email', {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({
-							guardianEmail: trimmedGuardianEmail,
-							studentName: name,
-							confirmUrl,
-						}),
-					});
-				}
+			if (!ageConfirmed && trimmedGuardianEmail && userId) {
+				const baseUrl =
+					process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+				const confirmUrl = `${baseUrl}/api/guardian-consent?user_id=${encodeURIComponent(
+					userId
+				)}&token=${encodeURIComponent(guardianToken)}`;
+				await fetch('/api/send-guardian-email', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						guardianEmail: trimmedGuardianEmail,
+						studentName: name,
+						confirmUrl,
+					}),
+				});
 			}
-			setMessage('회원가입이 완료되었습니다. 로그인해 주세요.');
+			setMessage(
+				'회원가입 신청이 완료되었습니다. 이메일로 발송된 인증 링크를 확인해 주세요.'
+			);
 			router.push('/auth/login');
 		} catch (err) {
 			console.error(err);

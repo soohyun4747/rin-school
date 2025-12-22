@@ -25,6 +25,14 @@ create table if not exists user_consents (
   created_at timestamptz not null default now()
 );
 
+create table if not exists admin_notification_emails (
+  id uuid primary key default uuid_generate_v4(),
+  email text not null unique,
+  label text,
+  created_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists courses (
   id uuid primary key default uuid_generate_v4(),
   title text not null,
@@ -126,18 +134,44 @@ create index if not exists idx_matching_runs_course on matching_runs(course_id);
 -- Trigger: profile auto creation
 create or replace function public.handle_new_user()
 returns trigger as $$
+declare
+  meta jsonb := new.raw_user_meta_data;
+  meta_age boolean := coalesce((meta->>'age_confirmed')::boolean, true);
+  meta_guardian_status text := meta->>'guardian_status';
+  meta_guardian_email text := meta->>'guardian_email';
+  meta_guardian_token text := meta->>'guardian_token';
+  final_guardian_status text;
 begin
+  final_guardian_status := coalesce(
+    meta_guardian_status,
+    case when meta_age then 'not_required' else 'pending' end
+  );
+
   insert into public.profiles(id, role, name, phone, email, birthdate, kakao_id, country)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data->>'role', 'student'),
-    coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
-    new.raw_user_meta_data->>'phone',
+    coalesce(meta->>'role', 'student'),
+    coalesce(meta->>'name', split_part(new.email, '@', 1)),
+    meta->>'phone',
     coalesce(new.email, ''),
-    to_date(new.raw_user_meta_data->>'birthdate', 'YYYY-MM-DD'),
-    new.raw_user_meta_data->>'kakao_id',
-    new.raw_user_meta_data->>'country'
+    to_date(meta->>'birthdate', 'YYYY-MM-DD'),
+    meta->>'kakao_id',
+    meta->>'country'
   );
+
+  insert into public.user_consents(user_id, age_confirmed, guardian_email, guardian_status, guardian_token)
+  values (
+    new.id,
+    meta_age,
+    case when meta_age then null else meta_guardian_email end,
+    case
+      when meta_age then 'not_required'
+      when final_guardian_status in ('pending', 'confirmed') then final_guardian_status
+      else 'pending'
+    end,
+    case when meta_age then null else meta_guardian_token end
+  );
+
   return new;
 end;
 $$ language plpgsql security definer;

@@ -48,7 +48,14 @@ export default async function AdminCoursesPage() {
 					<h1 className='text-2xl font-bold text-slate-900'>수업 관리</h1>
 					<p className='text-sm text-slate-600'>수업을 등록하고, 등록된 수업을 눌러 상세 관리 페이지로 이동하세요.</p>
 				</div>
-				<CourseCreateModal instructors={instructors ?? []} />
+				<div className='flex flex-wrap items-center gap-2'>
+					<Link
+						href='/admin/notifications'
+						className='rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50'>
+						알림 이메일 관리
+					</Link>
+					<CourseCreateModal instructors={instructors ?? []} />
+				</div>
 			</div>
 
 			<Card>

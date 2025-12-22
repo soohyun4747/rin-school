@@ -1,11 +1,11 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { requireSession, requireRole } from '@/lib/auth';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { runMatching } from '@/lib/matching';
 import { combineDayAndTime, splitWindowByDuration } from '@/lib/time';
+import { sendEmail } from '@/lib/email';
 
 type TimeWindowInput = {
 	day_of_week: number;
@@ -67,6 +67,68 @@ function validateTimeWindows(windows: TimeWindowInput[]) {
 	});
 }
 
+async function notifyScheduleConfirmation(
+	supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
+	payload: {
+		courseId: string;
+		slotStartAt: string;
+		slotEndAt: string;
+		instructorId: string | null;
+		instructorName: string | null;
+		studentIds: string[];
+	}
+) {
+	try {
+		const [{ data: course }, { data: students }, { data: instructor }] =
+			await Promise.all([
+				supabase
+					.from('courses')
+					.select('title')
+					.eq('id', payload.courseId)
+					.single(),
+				payload.studentIds.length
+					? supabase
+							.from('profiles')
+							.select('id, email, name')
+							.in('id', payload.studentIds)
+					: Promise.resolve({ data: [] as { email: string | null }[] }),
+				payload.instructorId
+					? supabase
+							.from('profiles')
+							.select('id, email, name')
+							.eq('id', payload.instructorId)
+							.single()
+					: Promise.resolve({ data: null as { email: string | null } | null }),
+			]);
+
+		const slotStart = new Date(payload.slotStartAt);
+		const slotEnd = new Date(payload.slotEndAt);
+		const timeText = `${slotStart.toLocaleString('ko-KR')} ~ ${slotEnd.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`;
+		const courseTitle = course?.title ?? '수업';
+
+		const studentEmails = (students ?? [])
+			.map((s) => s.email)
+			.filter(Boolean);
+		if (studentEmails.length > 0) {
+			await sendEmail({
+				to: studentEmails,
+				subject: `[린스쿨] 수업 일정이 확정되었습니다: ${courseTitle}`,
+				text: `수업 일정이 확정되었습니다.\n수업명: ${courseTitle}\n시간: ${timeText}\n담당 강사: ${payload.instructorName ?? '미지정'}`,
+			});
+		}
+
+		if (instructor?.email) {
+			await sendEmail({
+				to: instructor.email,
+				subject: `[린스쿨] 담당 수업 일정 확정: ${courseTitle}`,
+				text: `담당 수업 일정이 확정되었습니다.\n수업명: ${courseTitle}\n시간: ${timeText}\n학생 수: ${payload.studentIds.length}`,
+			});
+		}
+	} catch (error) {
+		console.error('일정 확정 알림 이메일 발송 실패', error);
+	}
+}
+
 export type CourseCreationResult = { success: boolean; error?: string };
 
 export async function createCourse(
@@ -78,7 +140,7 @@ export async function createCourse(
 	const supabase = await getSupabaseServerClient();
 
 	const title = String(formData.get('title') ?? '').trim();
-	const subject = String(formData.get('subject') ?? '').trim();
+	const courseSubject = String(formData.get('subject') ?? '').trim();
 	const gradeRange = String(formData.get('grade_range') ?? '').trim();
 	const description = String(formData.get('description') ?? '').trim();
 	const capacity = Number(formData.get('capacity') ?? 4);
@@ -90,7 +152,7 @@ export async function createCourse(
 	const imageFile = formData.get('image');
 	let imageUrl: string | null = null;
 
-	if (!title || !subject || !gradeRange) {
+	if (!title || !courseSubject || !gradeRange) {
 		return { success: false, error: '필수 항목을 모두 입력해주세요.' };
 	}
 
@@ -159,7 +221,7 @@ export async function createCourse(
 		.from('courses')
 		.insert({
 			title,
-			subject,
+			subject: courseSubject,
 			grade_range: gradeRange,
 			description: description || null,
 			weeks,
@@ -198,6 +260,37 @@ export async function createCourse(
 				success: false,
 				error: '수업 생성 중 시간이 저장되지 않았습니다. 다시 시도해주세요.',
 			};
+		}
+
+		const assignedInstructorIds = Array.from(
+			new Set(
+				parsedWindows
+					.map((w) => w.instructor_id)
+					.filter((id): id is string => Boolean(id))
+			)
+		);
+
+		if (assignedInstructorIds.length) {
+			try {
+				const { data: instructors } = await supabase
+					.from('profiles')
+					.select('email, name')
+					.in('id', assignedInstructorIds);
+
+				const to =
+					instructors
+						?.map((inst) => inst.email)
+						.filter(Boolean) ?? [];
+				if (to.length > 0) {
+					await sendEmail({
+						to,
+						subject: `[린스쿨] 새 수업 담당 안내: ${title}`,
+						text: `담당 강사로 지정된 수업이 등록되었습니다.\n수업명: ${title}\n과목: ${courseSubject}\n정원: ${capacity}명`,
+					});
+				}
+			} catch (emailError) {
+				console.error('수업 등록 알림 이메일 발송 실패', emailError);
+			}
 		}
 	}
 
@@ -631,6 +724,12 @@ export async function confirmMatchSchedule(courseId: string, matchId: string) {
 		})
 		.eq('id', matchId);
 
+	const { data: matchDetail } = await supabase
+		.from('matches')
+		.select('slot_start_at, slot_end_at, instructor_id, instructor_name')
+		.eq('id', matchId)
+		.single();
+
 	if (students?.length) {
 		await supabase
 			.from('applications')
@@ -640,6 +739,17 @@ export async function confirmMatchSchedule(courseId: string, matchId: string) {
 				'student_id',
 				students.map((s) => s.student_id)
 			);
+	}
+
+	if (matchDetail) {
+		await notifyScheduleConfirmation(supabase, {
+			courseId,
+			slotStartAt: matchDetail.slot_start_at,
+			slotEndAt: matchDetail.slot_end_at,
+			instructorId: matchDetail.instructor_id,
+			instructorName: matchDetail.instructor_name,
+			studentIds: students?.map((s) => s.student_id) ?? [],
+		});
 	}
 
 	revalidatePath(`/admin/courses/${courseId}`);
@@ -703,7 +813,7 @@ export async function confirmScheduleFromProposal(
 			updated_by: profile.id,
 			updated_at: new Date().toISOString(),
 		})
-		.select('id')
+		.select('id, slot_start_at, slot_end_at, instructor_id, instructor_name')
 		.single();
 
 	if (matchError || !match?.id) {
@@ -735,6 +845,15 @@ export async function confirmScheduleFromProposal(
 		.update({ status: 'matched' })
 		.eq('course_id', courseId)
 		.in('student_id', payload.student_ids);
+
+	await notifyScheduleConfirmation(supabase, {
+		courseId,
+		slotStartAt: match.slot_start_at,
+		slotEndAt: match.slot_end_at,
+		instructorId: match.instructor_id,
+		instructorName: match.instructor_name,
+		studentIds: payload.student_ids,
+	});
 
 	revalidatePath(`/admin/courses/${courseId}`);
 	revalidatePath('/admin/courses');
@@ -833,4 +952,56 @@ export async function removeStudentFromMatch(
 
 	revalidatePath(`/admin/courses/${courseId}`);
 	revalidatePath('/admin/courses');
+}
+
+export type AdminNotificationEmailFormState = { success?: string; error?: string };
+
+export async function addAdminNotificationEmail(
+	_prevState: AdminNotificationEmailFormState,
+	formData: FormData
+): Promise<AdminNotificationEmailFormState> {
+	const { profile } = await requireSession();
+	requireRole(profile.role, ['admin']);
+	const supabase = await getSupabaseServerClient();
+
+	const email = String(formData.get('email') ?? '').trim();
+	const label = String(formData.get('label') ?? '').trim();
+
+	if (!email) {
+		return { error: '이메일을 입력해주세요.' };
+	}
+
+	const { error } = await supabase.from('admin_notification_emails').insert({
+		email,
+		label: label || null,
+		created_by: profile.id,
+	});
+
+	if (error) {
+		console.error('admin notification email insert error', error);
+		return { error: '이메일을 저장하는 중 오류가 발생했습니다.' };
+	}
+
+	revalidatePath('/admin/notifications');
+	return { success: '알림 이메일을 추가했습니다.' };
+}
+
+export async function deleteAdminNotificationEmail(formData: FormData) {
+	const { profile } = await requireSession();
+	requireRole(profile.role, ['admin']);
+	const supabase = await getSupabaseServerClient();
+
+	const id = String(formData.get('id') ?? '');
+	if (!id) return;
+
+	const { error } = await supabase
+		.from('admin_notification_emails')
+		.delete()
+		.eq('id', id);
+
+	if (error) {
+		console.error('admin notification email delete error', error);
+	}
+
+	revalidatePath('/admin/notifications');
 }

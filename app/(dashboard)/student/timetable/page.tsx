@@ -37,21 +37,6 @@ export default async function StudentTimetablePage() {
 	const matchRows: StudentMatchRow[] =
 		(rows as StudentMatchRow[] | null) ?? [];
 
-	const instructorIds = Array.from(
-		new Set(
-			matchRows.map((r) => r.instructor_id).filter(Boolean) as string[]
-		)
-	);
-	const { data: instructors } = instructorIds.length
-		? await supabase
-				.from('profiles')
-				.select('id, name')
-				.in('id', instructorIds)
-		: { data: [] as { id: string; name: string | null }[] };
-	const instructorMap = new Map(
-		(instructors ?? []).map((p) => [p.id, p.name])
-	);
-
 	const visibleMatches = matchRows.filter(
 		(row) => row.status !== 'proposed' && row.status !== 'cancelled'
 	);
