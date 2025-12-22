@@ -38,7 +38,7 @@ export default async function StudentCourseDetail({
 	const { data: windows, error } = await supabase
 		.from('course_time_windows')
 		.select(
-			'id, day_of_week, start_time, end_time, instructor_id, instructor_name'
+			'id, day_of_week, start_time, end_time, instructor_id, instructor_name, profiles (name)'
 		)
 		.eq('course_id', course.id)
 		.order('day_of_week', { ascending: true });
@@ -83,9 +83,7 @@ export default async function StudentCourseDetail({
 						start_time: slot.start_time,
 						end_time: slot.end_time,
 						instructor_label:
-							slot.instructor_name ||
-							slot.instructor_id ||
-							'미지정',
+							slot.profiles?.name ?? slot.instructor_name,
 					})
 				);
 			} catch (err) {
@@ -97,21 +95,18 @@ export default async function StudentCourseDetail({
 						start_time: w.start_time,
 						end_time: w.end_time,
 						instructor_label:
-							w.instructor_name || w.instructor_id || '미지정',
+							slot.profiles?.name ?? slot.instructor_name,
 					},
 				];
 			}
 		}) ?? [];
 
-	const slotsByDay = slotOptions.reduce(
-		(acc, slot) => {
-			const list = acc.get(slot.day_of_week) ?? [];
-			list.push(slot);
-			acc.set(slot.day_of_week, list);
-			return acc;
-		},
-		new Map<number, typeof slotOptions>()
-	);
+	const slotsByDay = slotOptions.reduce((acc, slot) => {
+		const list = acc.get(slot.day_of_week) ?? [];
+		list.push(slot);
+		acc.set(slot.day_of_week, list);
+		return acc;
+	}, new Map<number, typeof slotOptions>());
 
 	return (
 		<div className='grid gap-6 lg:grid-cols-[1.1fr_0.9fr] mx-auto max-w-6xl px-4 py-12 space-y-8'>
@@ -235,7 +230,9 @@ export default async function StudentCourseDetail({
 																<input
 																	type='checkbox'
 																	name='window_ids'
-																	value={slot.value}
+																	value={
+																		slot.value
+																	}
 																	className='h-4 w-4 accent-[var(--primary)]'
 																	disabled={
 																		hasActiveApplication
@@ -243,10 +240,23 @@ export default async function StudentCourseDetail({
 																/>
 																<div>
 																	<p className='font-semibold text-slate-900'>
-																		{slot.start_time} - {slot.end_time}
+																		{
+																			slot.start_time
+																		}{' '}
+																		-{' '}
+																		{
+																			slot.end_time
+																		}
 																	</p>
 																	<p className='text-xs text-slate-600'>
-																		강사: {slot.instructor_label} · 정원 {course.capacity}
+																		강사:{' '}
+																		{
+																			slot.instructor_label
+																		}{' '}
+																		· 정원{' '}
+																		{
+																			course.capacity
+																		}
 																		명
 																	</p>
 																</div>
@@ -305,11 +315,16 @@ export default async function StudentCourseDetail({
 													className='flex items-center justify-between rounded-md border border-slate-100 px-3 py-2 text-sm'>
 													<div>
 														<p className='font-semibold text-slate-900'>
-															{slot.start_time} - {slot.end_time}
+															{slot.start_time} -{' '}
+															{slot.end_time}
 														</p>
 														<p className='text-xs text-slate-600'>
-															강사: {slot.instructor_label} · 정원 {course.capacity}
-															명
+															강사:{' '}
+															{
+																slot.instructor_label
+															}{' '}
+															· 정원{' '}
+															{course.capacity}명
 														</p>
 													</div>
 												</div>
