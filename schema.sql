@@ -20,6 +20,8 @@ create table if not exists user_consents (
   age_confirmed boolean not null default false,
   guardian_email text,
   guardian_status text not null default 'not_required' check (guardian_status in ('not_required','pending','confirmed')),
+  guardian_token text,
+  guardian_confirmed_at timestamptz,
   created_at timestamptz not null default now()
 );
 

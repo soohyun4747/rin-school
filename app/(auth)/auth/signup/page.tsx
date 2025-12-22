@@ -169,97 +169,123 @@ export default function SignupPage() {
 	const [agreedPrivacy, setAgreedPrivacy] = useState(false);
 	const [ageConfirmed, setAgeConfirmed] = useState(true);
 	const [guardianEmail, setGuardianEmail] = useState('');
+	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [message, setMessage] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const router = useRouter();
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		const supabase = getSupabaseBrowserClient();
+		setIsSubmitting(true);
 		setError(null);
 		setMessage(null);
-		const trimmedPhone = phone.trim();
-		const trimmedGuardianEmail = guardianEmail.trim();
 
-		if (password !== confirmPassword) {
-			setError('비밀번호와 비밀번호 확인이 일치하지 않습니다.');
-			return;
-		}
+		try {
+			const trimmedPhone = phone.trim();
+			const trimmedGuardianEmail = guardianEmail.trim();
+			const supabase = getSupabaseBrowserClient();
 
-		if (!agreedTerms || !agreedPrivacy) {
-			setError('필수 동의를 모두 완료해주세요.');
-			return;
-		}
+			if (password !== confirmPassword) {
+				setError('비밀번호와 비밀번호 확인이 일치하지 않습니다.');
+				return;
+			}
 
-		if (!ageConfirmed && !trimmedGuardianEmail) {
-			setError('14세 미만인 경우 보호자 이메일을 입력해야 합니다.');
-			return;
-		}
+			if (!agreedTerms || !agreedPrivacy) {
+				setError('필수 동의를 모두 완료해주세요.');
+				return;
+			}
 
-		const { data: signUpData, error: signUpError } =
-			await supabase.auth.signUp({
-				email,
-				password,
-				options: {
-					data: {
-						role,
+			if (!ageConfirmed && !trimmedGuardianEmail) {
+				setError('14세 미만인 경우 보호자 이메일을 입력해야 합니다.');
+				return;
+			}
+
+			const { data: signUpData, error: signUpError } =
+				await supabase.auth.signUp({
+					email,
+					password,
+					options: {
+						data: {
+							role,
+							name,
+							phone: trimmedPhone,
+							birthdate: birthdate || null,
+							kakao_id: kakaoId || null,
+							country: country || null,
+						},
+					},
+				});
+
+			if (signUpError) {
+				console.error({signUpError});
+				setError(signUpError.message);
+				return;
+			}
+
+			const userId = signUpData.user?.id;
+			if (userId && signUpData.session) {
+				const { error: profileError } = await supabase
+					.from('profiles')
+					.update({
+						phone: trimmedPhone || null,
 						name,
-						phone: trimmedPhone,
+						role,
 						birthdate: birthdate || null,
 						kakao_id: kakaoId || null,
 						country: country || null,
-					},
-				},
-			});
+						email,
+					})
+					.eq('id', userId);
 
-		if (signUpError) {
-			console.error({signUpError});
-			setError(signUpError.message);
-			return;
-		}
+				if (profileError) {
+					console.error({profileError});
+					setError(
+						'프로필 정보를 저장하는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.'
+					);
+					return;
+				}
 
-		const userId = signUpData.user?.id;
-		if (userId && signUpData.session) {
-			const { error: profileError } = await supabase
-				.from('profiles')
-				.update({
-					phone: trimmedPhone || null,
-					name,
-					role,
-					birthdate: birthdate || null,
-					kakao_id: kakaoId || null,
-					country: country || null,
-					email,
-				})
-				.eq('id', userId);
+				const guardianToken = crypto.randomUUID();
+				const { error: consentError } = await supabase
+					.from('user_consents')
+					.insert({
+						user_id: userId,
+						age_confirmed: ageConfirmed,
+						guardian_email: ageConfirmed ? null : trimmedGuardianEmail,
+						guardian_status: ageConfirmed ? 'not_required' : 'pending',
+						guardian_token: ageConfirmed ? null : guardianToken,
+					});
 
-			if (profileError) {
-				console.error({profileError});
-				setError(
-					'프로필 정보를 저장하는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.'
-				);
-				return;
+				if (consentError) {
+					console.error({consentError});
+					setError(
+						'동의 정보를 저장하는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.'
+					);
+					return;
+				}
+
+				if (!ageConfirmed && trimmedGuardianEmail) {
+					const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+					const confirmUrl = `${baseUrl}/api/guardian-consent?user_id=${encodeURIComponent(userId)}&token=${encodeURIComponent(guardianToken)}`;
+					await fetch('/api/send-guardian-email', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							guardianEmail: trimmedGuardianEmail,
+							studentName: name,
+							confirmUrl,
+						}),
+					});
+				}
 			}
-
-			const { error: consentError } = await supabase
-				.from('user_consents')
-				.insert({
-					user_id: userId,
-					age_confirmed: ageConfirmed,
-					guardian_email: ageConfirmed ? null : trimmedGuardianEmail,
-					guardian_status: ageConfirmed ? 'not_required' : 'pending',
-				});
-
-			if (consentError) {
-				console.error({consentError});
-				setError(
-					'동의 정보를 저장하는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.'
-				);
-				return;
-			}
+			setMessage('회원가입이 완료되었습니다. 로그인해 주세요.');
+			router.push('/auth/login');
+		} catch (err) {
+			console.error(err);
+			setError('회원가입 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+		} finally {
+			setIsSubmitting(false);
 		}
-		setMessage('회원가입이 완료되었습니다. 로그인해 주세요.');
-		router.push('/auth/login');
 	};
 
 	return (
@@ -473,11 +499,12 @@ export default function SignupPage() {
 						{message && (
 							<p className='text-sm text-green-700'>{message}</p>
 						)}
-						<Button
-							type='submit'
-							className='w-full'>
-							회원가입
-						</Button>
+		<Button
+			type='submit'
+			className='w-full'
+			disabled={isSubmitting}>
+			{isSubmitting ? '처리 중...' : '회원가입'}
+		</Button>
 					</form>
 					<p className='mt-4 text-sm text-slate-600'>
 						이미 계정이 있나요?{' '}

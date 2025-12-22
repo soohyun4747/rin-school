@@ -51,6 +51,8 @@ export interface Database {
           age_confirmed: boolean;
           guardian_email: string | null;
           guardian_status: "not_required" | "pending" | "confirmed";
+          guardian_token: string | null;
+          guardian_confirmed_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -60,6 +62,8 @@ export interface Database {
           age_confirmed?: boolean;
           guardian_email?: string | null;
           guardian_status?: "not_required" | "pending" | "confirmed";
+          guardian_token?: string | null;
+          guardian_confirmed_at?: string | null;
           created_at?: string;
         };
         Update: Partial<Omit<Database["public"]["Tables"]["user_consents"]["Row"], "user_id">>;

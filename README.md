@@ -40,10 +40,12 @@ Next.js(App Router, TypeScript) + Supabase(Auth/Postgres/RLS)로 구현한 린�
 
 2. **환경 변수 설정** – `.env` 파일 작성
    ```
-   NEXT_PUBLIC_SUPABASE_URL=your-project-url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=public-anon-key
-   SUPABASE_SERVICE_ROLE_KEY=service-role-key
-   ```
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=public-anon-key
+SUPABASE_SERVICE_ROLE_KEY=service-role-key
+NEXT_PUBLIC_APP_URL=https://your-app-url
+RESEND_API_KEY=resend-api-key
+```
 
 3. **Supabase 설정**
    1) Supabase 프로젝트 생성 후 SQL Editor에서 `schema.sql` 실행
