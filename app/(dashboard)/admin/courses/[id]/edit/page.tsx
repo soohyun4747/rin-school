@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { requireSession, requireRole } from '@/lib/auth';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { CourseEditForm } from '@/components/features/course-edit-form';
+import { BackButton } from '@/components/back-button';
 import type {
 	EditableTimeWindow,
 	InstructorOption,
@@ -67,11 +67,7 @@ export default async function AdminCourseEditPage({
 						등록 시 입력했던 정보와 시간을 모두 수정할 수 있습니다.
 					</p>
 				</div>
-				<Link
-					href={`/admin/courses/${course.id}`}
-					className='text-[var(--primary)] hover:underline'>
-					상세로 돌아가기
-				</Link>
+				<BackButton />
 			</div>
 
 			<Card>
