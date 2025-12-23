@@ -36,7 +36,7 @@ export default function ContactPage() {
 			<div className='grid gap-6 md:grid-cols-[1.2fr_0.8fr]'>
 				<div className='rounded-2xl border border-[var(--primary-border)] bg-white p-6 shadow-sm'>
 					<h2 className='text-lg font-semibold text-slate-900'>
-						문의 폼
+						문의하기
 					</h2>
 					<p className='text-sm text-slate-600'>
 						아래 정보를 작성해 주세요. 담당자가 확인 후
@@ -74,7 +74,7 @@ export default function ContactPage() {
 								name='message'
 								rows={4}
 								className='w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-soft)]'
-								placeholder='필요한 수업, 도입 일정, 예산 등을 알려주세요.'
+								placeholder='필요한 수업, 도입 일정 등을 알려주세요.'
 								required
 							/>
 						</div>
@@ -83,9 +83,6 @@ export default function ContactPage() {
 							className='inline-flex items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--primary-strong)]'>
 							문의 남기기
 						</button>
-						<p className='text-xs text-slate-500'>
-							현재 MVP 환경에서는 메일로 별도 안내를 드립니다.
-						</p>
 					</form>
 				</div>
 

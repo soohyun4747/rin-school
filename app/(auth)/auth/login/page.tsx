@@ -82,13 +82,15 @@ export default function LoginPage() {
 		if (resendError) {
 			setResendMessage(resendError.message);
 		} else {
-			setResendMessage('확인 이메일을 다시 보냈습니다. 받은 편지함을 확인해주세요.');
+			setResendMessage(
+				'확인 이메일을 다시 보냈습니다. 받은 편지함을 확인해주세요.'
+			);
 		}
 		setIsResending(false);
 	};
 
 	return (
-		<div className='flex flex-1 items-center justify-center bg-slate-50 py-12'>
+		<div className='flex flex-1 items-center justify-center bg-slate-50 py-12 min-h-[77vh]'>
 			<Card className='w-full max-w-md'>
 				<CardHeader>
 					<CardTitle>로그인</CardTitle>
@@ -128,17 +130,21 @@ export default function LoginPage() {
 						)}
 						{needsConfirmation && (
 							<div className='space-y-2 rounded-md bg-slate-50 p-3'>
-								<p className='text-sm text-slate-700'>
-									이메일 인증이 필요합니다. 확인 이메일을 다시 받아보세요.
-								</p>
-								<Button
-									type='button'
-									variant='secondary'
-									size='sm'
-									disabled={isResending}
-									onClick={handleResendConfirmation}>
-									{isResending ? '재전송 중...' : '확인 이메일 다시 보내기'}
-								</Button>
+								<div className='flex items-center justify-between'>
+									<p className='text-sm text-slate-700'>
+										이메일 인증이 필요합니다.
+									</p>
+									<Button
+										type='button'
+										variant='secondary'
+										size='sm'
+										disabled={isResending}
+										onClick={handleResendConfirmation}>
+										{isResending
+											? '재전송 중...'
+											: '확인 이메일 다시 보내기'}
+									</Button>
+								</div>
 								{resendMessage && (
 									<p className='text-xs text-slate-600'>
 										{resendMessage}

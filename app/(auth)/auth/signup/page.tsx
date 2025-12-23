@@ -11,7 +11,6 @@ import { Input } from '@/components/ui/input';
 const roles = [
 	{ value: 'student', label: '학생' },
 	{ value: 'instructor', label: '강사' },
-	{ value: 'admin', label: '관리자' },
 ];
 
 const TERMS_TEXT = `제1조 목적
