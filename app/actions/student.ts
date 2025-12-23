@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache';
 import { requireSession, requireRole } from '@/lib/auth';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { runMatching } from '@/lib/matching';
 import { toHHMM } from '@/lib/time';
 import { sendEmail } from '@/lib/email';
 import { getAdminNotificationEmails } from '@/lib/notifications';

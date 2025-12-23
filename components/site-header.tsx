@@ -70,6 +70,13 @@ export async function SiteHeader() {
 							className='rounded-md px-2 py-1 hover:text-[var(--primary)]'>
 							수업
 						</Link>
+						{isLoggedIn && (
+							<Link
+								href='/profile'
+								className='rounded-md px-3 py-1.5 text-[var(--primary)] hover:bg-[var(--primary-soft)]'>
+								프로필
+							</Link>
+						)}
 						{!isLoggedIn && (
 							<Link
 								href='/auth/login'
