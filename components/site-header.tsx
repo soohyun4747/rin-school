@@ -70,13 +70,6 @@ export async function SiteHeader() {
 							className='rounded-md px-2 py-1 hover:text-[var(--primary)]'>
 							수업
 						</Link>
-						{isLoggedIn && (
-							<Link
-								href='/profile'
-								className='rounded-md px-3 py-1.5 text-[var(--primary)] hover:bg-[var(--primary-soft)]'>
-								프로필
-							</Link>
-						)}
 						{!isLoggedIn && (
 							<Link
 								href='/auth/login'
@@ -95,6 +88,13 @@ export async function SiteHeader() {
 					</nav>
 				</div>
 				<div className='flex flex-1 items-center justify-end gap-3 text-sm text-slate-700'>
+					{isLoggedIn && (
+						<Link
+							href='/profile'
+							className='rounded-md px-3 py-1.5 text-[var(--primary)] hover:bg-[var(--primary-soft)]'>
+							프로필
+						</Link>
+					)}
 					{isLoggedIn && (
 						<span className='rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase text-slate-600'>
 							{profile.role}
