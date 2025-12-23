@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { sendEmail } from '@/lib/email';
+
 const contactPoints = [
 	{
 		title: '이메일',
@@ -16,6 +18,22 @@ const contactPoints = [
 		value: '평일 10:00 - 18:00',
 	},
 ];
+
+const contactEmail = contactPoints.find((item) => item.title === '이메일')?.value;
+
+async function submitContact(formData: FormData) {
+	'use server';
+
+	const name = (formData.get('name')?.toString() ?? '').trim();
+	const email = (formData.get('email')?.toString() ?? '').trim();
+	const message = (formData.get('message')?.toString() ?? '').trim();
+
+	await sendEmail({
+		to: contactEmail ?? 'hello@leanschool.kr',
+		subject: `[문의] ${name || '알 수 없음'}님이 남긴 문의`,
+		text: `보낸 사람: ${name || '미기재'}\n이메일: ${email || '미기재'}\n\n${message || '(내용 없음)'}`,
+	});
+}
 
 export default function ContactPage() {
 	return (
@@ -42,7 +60,7 @@ export default function ContactPage() {
 						아래 정보를 작성해 주세요. 담당자가 확인 후
 						연락드립니다.
 					</p>
-					<form className='mt-6 grid gap-4'>
+					<form action={submitContact} className='mt-6 grid gap-4'>
 						<div className='space-y-2'>
 							<label className='text-sm font-medium text-slate-700'>
 								성함
