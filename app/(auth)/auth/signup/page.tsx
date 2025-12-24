@@ -206,8 +206,7 @@ export default function SignupPage() {
 					password,
 					options: {
 						emailRedirectTo: `${
-							process.env.NEXT_PUBLIC_APP_URL ||
-							window.location.origin
+							process.env.NEXT_PUBLIC_APP_URL
 						}/auth/login`,
 						data: {
 							role,
@@ -223,15 +222,13 @@ export default function SignupPage() {
 							guardian_status: ageConfirmed
 								? 'not_required'
 								: 'pending',
-							guardian_token: ageConfirmed
-								? null
-								: guardianToken,
+							guardian_token: ageConfirmed ? null : guardianToken,
 						},
 					},
 				});
 
 			if (signUpError) {
-				console.error({signUpError});
+				console.error({ signUpError });
 				setError(signUpError.message);
 				return;
 			}
@@ -259,7 +256,9 @@ export default function SignupPage() {
 			router.push('/auth/login');
 		} catch (err) {
 			console.error(err);
-			setError('회원가입 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+			setError(
+				'회원가입 처리 중 오류가 발생했습니다. 다시 시도해주세요.'
+			);
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -426,7 +425,9 @@ export default function SignupPage() {
 										className='h-4 w-4'
 										required
 									/>
-									<span>개인정보 수집 및 이용에 동의합니다.</span>
+									<span>
+										개인정보 수집 및 이용에 동의합니다.
+									</span>
 								</label>
 							</div>
 							<div className='h-36 overflow-y-auto rounded border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-700'>
@@ -449,8 +450,8 @@ export default function SignupPage() {
 									<span>만 14세 이상입니다.</span>
 								</label>
 								<p className='text-xs text-slate-600'>
-									만 14세 미만일 경우 보호자 이메일을 입력하면 동의서
-									확인을 요청합니다.
+									만 14세 미만일 경우 보호자 이메일을 입력하면
+									동의서 확인을 요청합니다.
 								</p>
 							</div>
 							{!ageConfirmed && (
@@ -476,12 +477,12 @@ export default function SignupPage() {
 						{message && (
 							<p className='text-sm text-green-700'>{message}</p>
 						)}
-		<Button
-			type='submit'
-			className='w-full'
-			disabled={isSubmitting}>
-			{isSubmitting ? '처리 중...' : '회원가입'}
-		</Button>
+						<Button
+							type='submit'
+							className='w-full'
+							disabled={isSubmitting}>
+							{isSubmitting ? '처리 중...' : '회원가입'}
+						</Button>
 					</form>
 					<p className='mt-4 text-sm text-slate-600'>
 						이미 계정이 있나요?{' '}
