@@ -446,7 +446,7 @@ export default function SignupPage() {
 										}
 										className='h-4 w-4'
 									/>
-									<span>만 14세 이상입니다. (필수)</span>
+									<span>만 14세 이상입니다.</span>
 								</label>
 								<p className='text-xs text-slate-600'>
 									만 14세 미만일 경우 보호자 이메일을 입력하면 동의서
