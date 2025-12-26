@@ -130,7 +130,9 @@ export function AdminCourseList({ courses }: CourseListProps) {
 						type='button'
 						size='sm'
 						onClick={handleSave}
-						disabled={!hasChanges || isPending}>
+						// disabled={!hasChanges || isPending}
+                                                disabled
+                                                >
 						{isPending ? '저장 중...' : '순서 저장'}
 					</Button>
 				</div>
