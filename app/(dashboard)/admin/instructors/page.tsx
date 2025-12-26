@@ -79,7 +79,7 @@ export default async function AdminInstructorsPage({ searchParams }: { searchPar
 					/>
 					<button
 						type='submit'
-						className='rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-semibold text-white'>
+						className='rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-semibold text-white min-w-fit'>
 						검색
 					</button>
 				</form>

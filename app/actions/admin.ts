@@ -91,14 +91,18 @@ async function notifyScheduleConfirmation(
 							.from('profiles')
 							.select('id, email, name')
 							.in('id', payload.studentIds)
-					: Promise.resolve({ data: [] as { email: string | null }[] }),
+					: Promise.resolve({
+							data: [] as { email: string | null }[],
+						}),
 				payload.instructorId
 					? supabase
 							.from('profiles')
 							.select('id, email, name')
 							.eq('id', payload.instructorId)
 							.single()
-					: Promise.resolve({ data: null as { email: string | null } | null }),
+					: Promise.resolve({
+							data: null as { email: string | null } | null,
+						}),
 			]);
 
 		const slotStart = new Date(payload.slotStartAt);
@@ -204,42 +208,42 @@ export async function createCourse(
 				contentType: imageFile.type || undefined,
 			});
 
-        if (uploadError) {
-                console.error('course image upload error:', uploadError);
-                return {
-                        success: false,
-                        error: '이미지 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.',
-                };
-        }
+		if (uploadError) {
+			console.error('course image upload error:', uploadError);
+			return {
+				success: false,
+				error: '이미지 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.',
+			};
+		}
 
-        const { data } = supabase.storage
-                .from('course-images')
-                .getPublicUrl(filePath);
-        imageUrl = data.publicUrl;
-}
+		const { data } = supabase.storage
+			.from('course-images')
+			.getPublicUrl(filePath);
+		imageUrl = data.publicUrl;
+	}
 
-        const { data: lastCourse } = await supabase
-                .from('courses')
-                .select('display_order')
-                .order('display_order', { ascending: false, nullsLast: true })
-                .limit(1)
-                .maybeSingle();
+	const { data: lastCourse } = await supabase
+		.from('courses')
+		.select('display_order')
+		.order('display_order', { ascending: false, nullsLast: true })
+		.limit(1)
+		.maybeSingle();
 
-        const nextDisplayOrder = (lastCourse?.display_order ?? 0) + 1;
+	const nextDisplayOrder = (lastCourse?.display_order ?? 0) + 1;
 
-        const { data: newCourse, error } = await supabase
-                .from('courses')
-                .insert({
-                        title,
-                        subject: courseSubject,
-                        grade_range: gradeRange,
-                        description: description || null,
-                        display_order: nextDisplayOrder,
-                        weeks,
-                        capacity,
-                        duration_minutes: duration,
-                        image_url: imageUrl,
-                        created_by: session.user.id, // (권장: 아래 참고)
+	const { data: newCourse, error } = await supabase
+		.from('courses')
+		.insert({
+			title,
+			subject: courseSubject,
+			grade_range: gradeRange,
+			description: description || null,
+			display_order: nextDisplayOrder,
+			weeks,
+			capacity,
+			duration_minutes: duration,
+			image_url: imageUrl,
+			created_by: session.user.id, // (권장: 아래 참고)
 		})
 		.select('id')
 		.single();
@@ -289,9 +293,8 @@ export async function createCourse(
 					.in('id', assignedInstructorIds);
 
 				const to =
-					instructors
-						?.map((inst) => inst.email)
-						.filter(Boolean) ?? [];
+					instructors?.map((inst) => inst.email).filter(Boolean) ??
+					[];
 				if (to.length > 0) {
 					await sendEmail({
 						to,
@@ -329,7 +332,9 @@ export async function updateCourse(
 	const parsedWindows = parseTimeWindows(
 		String(formData.get('time_windows') ?? '')
 	);
-	const currentImageUrl = String(formData.get('current_image_url') ?? '').trim();
+	const currentImageUrl = String(
+		formData.get('current_image_url') ?? ''
+	).trim();
 	const imageFile = formData.get('image');
 	let imageUrl: string | null = currentImageUrl || null;
 
@@ -414,7 +419,10 @@ export async function updateCourse(
 
 	if (courseUpdateError) {
 		console.error('courses update error:', courseUpdateError);
-		return { success: false, error: `Update failed: ${courseUpdateError.message}` };
+		return {
+			success: false,
+			error: `Update failed: ${courseUpdateError.message}`,
+		};
 	}
 
 	const timeWindows = slotWindows.map((w) => ({
@@ -460,9 +468,9 @@ export async function updateCourse(
 }
 
 export async function deleteCourse(courseId: string) {
-        const { profile } = await requireSession();
-        requireRole(profile.role, ['admin']);
-        const supabase = await getSupabaseServerClient();
+	const { profile } = await requireSession();
+	requireRole(profile.role, ['admin']);
+	const supabase = await getSupabaseServerClient();
 
 	const { error } = await supabase
 		.from('courses')
@@ -471,39 +479,44 @@ export async function deleteCourse(courseId: string) {
 
 	if (error) {
 		console.error(error);
-        }
-        revalidatePath('/admin/courses');
-        revalidatePath('/classes');
+	}
+	revalidatePath('/admin/courses');
+	revalidatePath('/classes');
 }
 
 export async function reorderCourses(courseIds: string[]) {
-        const { profile } = await requireSession();
-        requireRole(profile.role, ['admin']);
-        const supabase = await getSupabaseServerClient();
+	const { profile } = await requireSession();
+	requireRole(profile.role, ['admin']);
+	const supabase = await getSupabaseServerClient();
 
-        const updates = courseIds.map((id, index) => ({
-                id,
-                display_order: index + 1,
-        }));
+	// 병렬 업데이트
+	const results = await Promise.all(
+		courseIds.map((id, index) =>
+			supabase
+				.from('courses')
+				.update({ display_order: index + 1 })
+				.eq('id', id)
+		)
+	);
 
-        const { error } = await supabase.from('courses').upsert(updates);
+	const error = results.find((r) => r.error)?.error;
 
-        if (error) {
-                console.error('course reorder error:', error);
-                return {
-                        success: false,
-                        error: '수업 순서를 저장하는 중 문제가 발생했습니다. 다시 시도해주세요.',
-                };
-        }
+	if (error) {
+		console.error('course reorder error:', error);
+		return {
+			success: false,
+			error: '수업 순서를 저장하는 중 문제가 발생했습니다. 다시 시도해주세요.',
+		};
+	}
 
-        revalidatePath('/admin/courses');
-        revalidatePath('/classes');
-        return { success: true };
+	revalidatePath('/admin/courses');
+	revalidatePath('/classes');
+	return { success: true };
 }
 
 export async function createTimeWindow(courseId: string, formData: FormData) {
-        const { profile } = await requireSession();
-        requireRole(profile.role, ['admin']);
+	const { profile } = await requireSession();
+	requireRole(profile.role, ['admin']);
 	const supabase = await getSupabaseServerClient();
 
 	const { data: course } = await supabase
@@ -998,7 +1011,9 @@ export async function confirmScheduleFromProposal(
 			updated_by: profile.id,
 			updated_at: new Date().toISOString(),
 		})
-		.select('id, slot_start_at, slot_end_at, instructor_id, instructor_name')
+		.select(
+			'id, slot_start_at, slot_end_at, instructor_id, instructor_name'
+		)
 		.single();
 
 	if (matchError || !match?.id) {
@@ -1045,10 +1060,7 @@ export async function confirmScheduleFromProposal(
 	return { success: '일정을 확정했습니다.' };
 }
 
-export async function deleteMatchSchedule(
-	courseId: string,
-	matchId: string
-) {
+export async function deleteMatchSchedule(courseId: string, matchId: string) {
 	const { profile } = await requireSession();
 	requireRole(profile.role, ['admin']);
 	const supabase = await getSupabaseServerClient();
@@ -1139,7 +1151,10 @@ export async function removeStudentFromMatch(
 	revalidatePath('/admin/courses');
 }
 
-export type AdminNotificationEmailFormState = { success?: string; error?: string };
+export type AdminNotificationEmailFormState = {
+	success?: string;
+	error?: string;
+};
 
 export async function addAdminNotificationEmail(
 	_prevState: AdminNotificationEmailFormState,
