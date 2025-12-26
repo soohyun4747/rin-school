@@ -251,7 +251,7 @@ export default function SignupPage() {
 				});
 			}
 			setMessage(
-				'회원가입 신청이 완료되었습니다.'
+				'회원가입이 완료되었습니다.'
 			);
 			router.push('/auth/login');
 		} catch (err) {
