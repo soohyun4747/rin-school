@@ -158,7 +158,7 @@ export function AdminCourseList({ courses }: CourseListProps) {
 								draggable
 								onDragStart={() => handleDragStart(course.id)}
 								onDragEnd={handleDragEnd}
-								className='flex items-center gap-2 rounded-md border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-grab'>
+								className='md:flex items-center gap-2 rounded-md border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-grab hidden'>
 								<svg
 									aria-hidden='true'
 									className='h-4 w-4 text-slate-500'
@@ -170,6 +170,26 @@ export function AdminCourseList({ courses }: CourseListProps) {
 							<span className='text-xs text-slate-500'>
 								현재 {index + 1} / {courseCount}
 							</span>
+							<div className='ml-auto flex gap-1 md:hidden'>
+								<Button
+									type='button'
+									variant='ghost'
+									size='sm'
+									onClick={() => moveBy(course.id, -1)}
+									disabled={index === 0}>
+									▲ 위로
+								</Button>
+								<Button
+									type='button'
+									variant='ghost'
+									size='sm'
+									onClick={() => moveBy(course.id, 1)}
+									disabled={
+										index === currentCourses.length - 1
+									}>
+									▼ 아래로
+								</Button>
+							</div>
 						</div>
 
 						<Link
