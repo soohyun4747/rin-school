@@ -23,17 +23,21 @@ export default async function StudentCourseDetail({
 	const isStudent = profile.role === 'student';
 	const supabase = await getSupabaseServerClient();
 
-	const { data } = await supabase
-		.from('courses')
-		.select(
-			'id, title, subject, grade_range, description, duration_minutes, capacity, image_url, weeks'
-		)
-		.eq('id', id)
-		.single();
+        const { data } = await supabase
+                .from('courses')
+                .select(
+                        'id, title, subject, grade_range, description, duration_minutes, capacity, image_url, weeks, is_closed'
+                )
+                .eq('id', id)
+                .single();
 
-	if (!data) notFound();
+        if (!data) notFound();
 
-	const course: ICourse = data;
+        const course: ICourse = data;
+
+        if (course.is_closed) {
+                redirect('/classes');
+        }
 
 	const { data: windows, error } = await supabase
 		.from('course_time_windows')

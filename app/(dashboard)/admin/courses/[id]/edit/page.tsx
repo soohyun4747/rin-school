@@ -22,13 +22,13 @@ export default async function AdminCourseEditPage({
 
 	const [{ data: course }, { data: windows }, { data: instructors }] =
 		await Promise.all([
-			supabase
-				.from('courses')
-				.select(
-					'id, title, subject, grade_range, description, capacity, duration_minutes, image_url, weeks'
-				)
-				.eq('id', id)
-				.single(),
+                        supabase
+                                .from('courses')
+                                .select(
+                                        'id, title, subject, grade_range, description, capacity, duration_minutes, image_url, weeks, is_closed'
+                                )
+                                .eq('id', id)
+                                .single(),
 			supabase
 				.from('course_time_windows')
 				.select(

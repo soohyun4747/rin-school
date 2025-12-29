@@ -17,6 +17,7 @@ export interface ICourse {
         created_at: number;
         image_url: string;
         display_order: number | null;
+        is_closed: boolean;
 }
 
 export default async function AdminCoursesPage() {
@@ -27,7 +28,7 @@ export default async function AdminCoursesPage() {
                 supabase
                         .from('courses')
                         .select(
-                                'id, title, subject, grade_range, description, capacity, duration_minutes, created_at, image_url, weeks, display_order'
+                                'id, title, subject, grade_range, description, capacity, duration_minutes, created_at, image_url, weeks, display_order, is_closed'
                         )
                         .order('display_order', { ascending: true, nullsLast: true })
                         .order('created_at', { ascending: false }),

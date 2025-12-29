@@ -135,6 +135,7 @@ async function notifyScheduleConfirmation(
 
 export type CourseCreationResult = { success: boolean; error?: string };
 export type CourseUpdateResult = { success: boolean; error?: string };
+export type CourseToggleResult = { success: boolean; error?: string };
 
 export async function createCourse(
 	_prevState: CourseCreationResult,
@@ -459,12 +460,40 @@ export async function updateCourse(
 		};
 	}
 
-	revalidatePath('/admin/courses');
-	revalidatePath(`/admin/courses/${courseId}`);
-	revalidatePath(`/admin/courses/${courseId}/time-windows`);
-	revalidatePath(`/admin/courses/${courseId}/edit`);
-	revalidatePath('/classes');
-	return { success: true };
+        revalidatePath('/admin/courses');
+        revalidatePath(`/admin/courses/${courseId}`);
+        revalidatePath(`/admin/courses/${courseId}/time-windows`);
+        revalidatePath(`/admin/courses/${courseId}/edit`);
+        revalidatePath('/classes');
+        return { success: true };
+}
+
+export async function updateCourseClosed(
+        courseId: string,
+        isClosed: boolean
+): Promise<CourseToggleResult> {
+        const { profile } = await requireSession();
+        requireRole(profile.role, ['admin']);
+        const supabase = await getSupabaseServerClient();
+
+        const { error } = await supabase
+                .from('courses')
+                .update({ is_closed: isClosed })
+                .eq('id', courseId);
+
+        if (error) {
+                console.error('course toggle closed error:', error);
+                return { success: false, error: '신청 마감 상태 변경에 실패했습니다.' };
+        }
+
+        revalidatePath('/admin/courses');
+        revalidatePath(`/admin/courses/${courseId}`);
+        revalidatePath(`/admin/courses/${courseId}/time-windows`);
+        revalidatePath(`/admin/courses/${courseId}/edit`);
+        revalidatePath('/classes');
+        revalidatePath(`/classes/${courseId}`);
+
+        return { success: true };
 }
 
 export async function deleteCourse(courseId: string) {

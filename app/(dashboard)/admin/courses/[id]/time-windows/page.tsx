@@ -31,13 +31,13 @@ export default async function CourseTimeWindowsPage({
 	const { id } = await params; // ✅ 여기서 unwrap
 	const supabase = await getSupabaseServerClient();
 
-	const { data } = await supabase
-		.from('courses')
-		.select(
-			'id, title, subject, grade_range, description, duration_minutes, capacity, image_url, weeks'
-		)
-		.eq('id', id) // ✅ params.id 대신 id
-		.single();
+        const { data } = await supabase
+                .from('courses')
+                .select(
+                        'id, title, subject, grade_range, description, duration_minutes, capacity, image_url, weeks, is_closed'
+                )
+                .eq('id', id) // ✅ params.id 대신 id
+                .single();
 
 	if (!data) notFound();
 

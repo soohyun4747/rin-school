@@ -54,13 +54,13 @@ export default async function AdminCourseDetailPage({
 	const { id } = await params;
 	const supabase = await getSupabaseServerClient();
 
-	const { data: courseData } = await supabase
-		.from('courses')
-		.select(
-			'id, title, subject, grade_range, description, duration_minutes, capacity, image_url, weeks'
-		)
-		.eq('id', id)
-		.single();
+        const { data: courseData } = await supabase
+                .from('courses')
+                .select(
+                        'id, title, subject, grade_range, description, duration_minutes, capacity, image_url, weeks, is_closed'
+                )
+                .eq('id', id)
+                .single();
 
 	if (!courseData) notFound();
 	const course: ICourse = courseData;
@@ -161,13 +161,16 @@ export default async function AdminCourseDetailPage({
 		<div className='space-y-6'>
 			<div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
 				<div className='space-y-1'>
-					<p className='text-sm text-slate-500'>수업 상세</p>
-					<h1 className='text-2xl font-bold text-slate-900'>
-						{course.title}
-					</h1>
-					<p className='text-sm text-slate-600'>
-						{course.subject} · {course.grade_range} ·{' '}
-						{course.duration_minutes}분 · 정원 {course.capacity}
+                                        <p className='text-sm text-slate-500'>수업 상세</p>
+                                        <h1 className='text-2xl font-bold text-slate-900'>
+                                                {course.title}
+                                        </h1>
+                                        {course.is_closed && (
+                                                <Badge variant='warning'>신청 마감</Badge>
+                                        )}
+                                        <p className='text-sm text-slate-600'>
+                                                {course.subject} · {course.grade_range} ·{' '}
+                                                {course.duration_minutes}분 · 정원 {course.capacity}
 					</p>
 				</div>
 				<div className='flex flex-wrap gap-2'>

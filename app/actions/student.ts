@@ -27,13 +27,13 @@ export async function applyToCourse(courseId: string, windowIds: string[]) {
 		return { windowId, start_time, end_time };
 	});
 
-	const [{ data: course }, { data: windows }] = await Promise.all([
-		supabase
-			.from('courses')
-			.select('capacity, duration_minutes, title')
-			.eq('id', courseId)
-			.single(),
-		supabase
+        const [{ data: course }, { data: windows }] = await Promise.all([
+                supabase
+                        .from('courses')
+                        .select('capacity, duration_minutes, title, is_closed')
+                        .eq('id', courseId)
+                        .single(),
+                supabase
 			.from('course_time_windows')
 			.select(
 				'id, day_of_week, start_time, end_time, instructor_id, instructor_name'
@@ -41,13 +41,17 @@ export async function applyToCourse(courseId: string, windowIds: string[]) {
 			.eq('course_id', courseId),
 	]);
 
-	if (!course) {
-		throw new Error('수업 정보를 불러오지 못했습니다.');
-	}
+        if (!course) {
+                throw new Error('수업 정보를 불러오지 못했습니다.');
+        }
 
-	if (!windows || windows.length === 0) {
-		throw new Error('선택한 시간이 유효하지 않습니다.');
-	}
+        if (course.is_closed) {
+                throw new Error('신청이 마감된 수업입니다.');
+        }
+
+        if (!windows || windows.length === 0) {
+                throw new Error('선택한 시간이 유효하지 않습니다.');
+        }
 
 	const { data: existing } = await supabase
 		.from('applications')
