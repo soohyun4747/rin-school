@@ -44,7 +44,7 @@ export default function LoginPage() {
 			.from('user_consents')
 			.select('age_confirmed, guardian_status')
 			.eq('user_id', userData.id)
-			.single();
+			.maybeSingle();
 
 		if (
 			consentData &&
