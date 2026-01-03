@@ -108,19 +108,24 @@ export function generateSlotsFromWindows(
 
 export function formatDateTime(date: Date) {
 	return date.toLocaleString('ko-KR', {
+		timeZone: 'Asia/Seoul',
 		month: 'short',
 		day: 'numeric',
 		weekday: 'short',
 		hour: '2-digit',
 		minute: '2-digit',
+		hour12: false,
 	});
 }
 
+
 export function formatDayTime(date: Date) {
 	return date.toLocaleString('ko-KR', {
+		timeZone: 'Asia/Seoul',
 		weekday: 'short',
 		hour: '2-digit',
 		minute: '2-digit',
+		hour12: false,
 	});
 }
 
