@@ -137,10 +137,9 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
 
           <Card className="md:col-span-2">
             <CardHeader>
-              <CardTitle>이미지</CardTitle>
+              <CardTitle>대표 이미지</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">대표 이미지 (선택)</label>
               <input
                 ref={fileInputRef}
                 name="image"
@@ -158,7 +157,7 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
               {(previewUrl ?? null) && (
                 <div className="overflow-hidden rounded-md border border-slate-200">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={previewUrl ?? undefined} alt="선택한 이미지 미리보기" className="h-40 w-full object-cover" />
+                  <img src={previewUrl ?? undefined} alt="선택한 이미지 미리보기" className="w-full object-fit" />
                 </div>
               )}
               <p className="text-xs text-slate-500">수업 소개에 사용됩니다. (JPG, PNG 등 이미지 파일)</p>
