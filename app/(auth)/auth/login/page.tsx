@@ -37,6 +37,7 @@ export default function LoginPage() {
 			}
 			return;
 		}
+
 		const userData = data.user;
 		const userMetaData = data.user.user_metadata;
 
