@@ -1,12 +1,14 @@
 import Link from 'next/link';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { requireSession, requireRole } from '@/lib/auth';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { formatDateTime } from '@/lib/time';
 
 type StudentProfile = {
-	id: string;
+        id: string;
+        username: string | null;
         name: string;
         email: string;
         phone: string | null;
@@ -50,7 +52,7 @@ export default async function AdminStudentsPage({
 
         let query = supabase
                 .from('profiles')
-                .select('id, name, email, phone, birthdate, kakao_id, country, guardian_name, created_at', { count: 'exact' })
+                .select('id, username, name, email, phone, birthdate, kakao_id, country, guardian_name, created_at', { count: 'exact' })
                 .eq('role', 'student')
                 .order(sortBy, { ascending: sortDirection === 'asc' })
                 .range(from, to);
@@ -136,6 +138,9 @@ export default async function AdminStudentsPage({
                                                                                 <th className='px-4 py-2 text-left'>
                                                                                         {renderSortLabel('학생', 'name')}
                                                                                 </th>
+                                                                                <th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>
+                                                                                        아이디
+                                                                                </th>
                                                                                 <th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>이메일</th>
                                                                                 <th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>연락처</th>
                                                                                 <th className='px-4 py-2 text-left'>
@@ -151,6 +156,9 @@ export default async function AdminStudentsPage({
                                                                                 <th className='px-4 py-2 text-left'>
                                                                                         {renderSortLabel('가입일', 'created_at')}
                                                                                 </th>
+                                                                                <th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>
+                                                                                        상세보기
+                                                                                </th>
                                                                         </tr>
                                                                 </thead>
 								<tbody className='divide-y divide-slate-100 bg-white'>
@@ -164,6 +172,9 @@ export default async function AdminStudentsPage({
                                                                                                                 {student.name || '이름 미입력'}
                                                                                                         </Link>
                                                                                                 </td>
+                                                                                                <td className='px-4 py-2 text-slate-700'>
+                                                                                                        {student.username || '아이디 없음'}
+                                                                                                </td>
                                                                                                 <td className='px-4 py-2 text-slate-700'>{student.email}</td>
                                                                                                 <td className='px-4 py-2 text-slate-700'>{student.phone || '연락처 없음'}</td>
                                                                                                 <td className='px-4 py-2 text-slate-700'>{student.birthdate ?? '미입력'}</td>
@@ -171,6 +182,13 @@ export default async function AdminStudentsPage({
                                                                                                 <td className='px-4 py-2 text-slate-700'>{student.country ?? '미입력'}</td>
                                                                                                 <td className='px-4 py-2 text-slate-700'>{student.guardian_name ?? '미입력'}</td>
                                                                                                 <td className='px-4 py-2 text-slate-500'>{formatDateTime(new Date(student.created_at))}</td>
+                                                                                                <td className='px-4 py-2'>
+                                                                                                        <Button asChild variant='outline' size='sm'>
+                                                                                                                <Link href={`/admin/students/${student.id}`}>
+                                                                                                                        상세보기
+                                                                                                                </Link>
+                                                                                                        </Button>
+                                                                                                </td>
                                                                                         </tr>
                                                                                 );
                                                                         })}
