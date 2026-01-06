@@ -1,16 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-	deleteCourse,
-	reorderCourses,
-	updateCourseClosed,
+        deleteCourse,
+        reorderCourses,
+        updateCourseClosed,
 } from '@/app/actions/admin';
 import type { ICourse } from '@/app/(dashboard)/admin/courses/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ConfirmSubmitButton } from '@/components/ui/confirm-submit-button';
 import { cn } from '@/lib/utils';
 
 type CourseListProps = {
@@ -35,17 +35,25 @@ function moveItem(list: ICourse[], fromId: string, toId: string) {
 }
 
 export function AdminCourseList({ courses }: CourseListProps) {
-	const initialOrderRef = useRef<string[]>(
-		courses.map((course) => course.id)
-	);
-	const [currentCourses, setCurrentCourses] = useState<ICourse[]>(courses);
-	const [draggingId, setDraggingId] = useState<string | null>(null);
-	const [hasChanges, setHasChanges] = useState(false);
-	const [status, setStatus] = useState<StatusMessage | null>(null);
-	const [closingCourseId, setClosingCourseId] = useState<string | null>(null);
-	const [isPending, startTransition] = useTransition();
+        const initialOrderRef = useRef<string[]>(
+                courses.map((course) => course.id)
+        );
+        const router = useRouter();
+        const [currentCourses, setCurrentCourses] = useState<ICourse[]>(courses);
+        const [draggingId, setDraggingId] = useState<string | null>(null);
+        const [hasChanges, setHasChanges] = useState(false);
+        const [status, setStatus] = useState<StatusMessage | null>(null);
+        const [closingCourseId, setClosingCourseId] = useState<string | null>(null);
+        const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null);
+        const [isPending, startTransition] = useTransition();
 
-	const courseCount = currentCourses.length;
+        const courseCount = currentCourses.length;
+
+        useEffect(() => {
+                setCurrentCourses(courses);
+                initialOrderRef.current = courses.map((course) => course.id);
+                setHasChanges(false);
+        }, [courses]);
 
 	const updateOrderState = (updater: (prev: ICourse[]) => ICourse[]) => {
 		setCurrentCourses((prev) => {
@@ -103,12 +111,40 @@ export function AdminCourseList({ courses }: CourseListProps) {
 
 			initialOrderRef.current = currentCourses.map((course) => course.id);
 			setHasChanges(false);
-			setStatus({
-				type: 'success',
-				message: '수업 순서가 저장되었습니다.',
-			});
-		});
-	};
+                        setStatus({
+                                type: 'success',
+                                message: '수업 순서가 저장되었습니다.',
+                        });
+                });
+        };
+
+        const handleDelete = (courseId: string) => {
+                const confirmed = confirm('이 수업을 삭제하시겠습니까?');
+                if (!confirmed) return;
+
+                setDeletingCourseId(courseId);
+                startTransition(async () => {
+                        try {
+                                await deleteCourse(courseId);
+                                setCurrentCourses((prev) =>
+                                        prev.filter((course) => course.id !== courseId)
+                                );
+                                initialOrderRef.current = initialOrderRef.current.filter(
+                                        (id) => id !== courseId
+                                );
+                                setStatus({ type: 'success', message: '수업을 삭제했습니다.' });
+                                router.refresh();
+                        } catch (error) {
+                                console.error(error);
+                                setStatus({
+                                        type: 'error',
+                                        message: '수업을 삭제하지 못했습니다.',
+                                });
+                        } finally {
+                                setDeletingCourseId(null);
+                        }
+                });
+        };
 
 	const handleToggleClosed = (courseId: string, nextClosed: boolean) => {
 		setClosingCourseId(courseId);
@@ -293,15 +329,22 @@ export function AdminCourseList({ courses }: CourseListProps) {
 								className='rounded-md border border-[var(--primary-border)] px-3 py-2 text-[var(--primary)] hover:bg-[var(--primary-soft)]'>
 								수업 수정
 							</Link>
-							<form
-								action={deleteCourse.bind(null, course.id)}
-								className='ml-auto'>
-								<ConfirmSubmitButton
-									variant='ghost'
-									className='text-red-600'>
-									삭제
-								</ConfirmSubmitButton>
-							</form>
+                                                <form
+                                                        className='ml-auto'>
+                                                        <Button
+                                                                type='button'
+                                                                variant='ghost'
+                                                                className='text-red-600'
+                                                                onClick={() => handleDelete(course.id)}
+                                                                disabled={
+                                                                        deletingCourseId === course.id ||
+                                                                        isPending
+                                                                }>
+                                                                {deletingCourseId === course.id
+                                                                        ? '삭제 중...'
+                                                                        : '삭제'}
+                                                        </Button>
+                                                </form>
 							<Button
 								type='button'
 								variant={

@@ -156,15 +156,15 @@ export async function createCourse(
 	const title = String(formData.get('title') ?? '').trim();
 	const courseSubject = String(formData.get('subject') ?? '').trim();
 	const gradeRange = String(formData.get('grade_range') ?? '').trim();
-	const description = String(formData.get('description') ?? '').trim();
-	const capacity = Number(formData.get('capacity') ?? 4);
-	const duration = Number(formData.get('duration_minutes') ?? 60);
-	const weeks = Number(formData.get('weeks') ?? 1);
-	const parsedWindows = parseTimeWindows(
-		String(formData.get('time_windows') ?? '')
-	);
-	const imageFile = formData.get('image');
-	let imageUrl: string | null = null;
+        const description = String(formData.get('description') ?? '').trim();
+        const capacity = Number(formData.get('capacity') ?? 4);
+        const duration = Number(formData.get('duration_minutes') ?? 60);
+        const weeks = Number(formData.get('weeks') ?? 1);
+        const parsedWindows = parseTimeWindows(
+                String(formData.get('time_windows') ?? '')
+        );
+        const imageFile = formData.get('image');
+        let imageUrl: string | null = null;
 
 	if (!title || !courseSubject || !gradeRange) {
 		return { success: false, error: '필수 항목을 모두 입력해주세요.' };
@@ -178,9 +178,16 @@ export async function createCourse(
 		return { success: false, error: '설명은 800자 이내로 작성해주세요.' };
 	}
 
-	if (parsedWindows.length === 0) {
-		return { success: false, error: '시간 범위를 1개 이상 추가해주세요.' };
-	}
+        if (parsedWindows.length === 0) {
+                return { success: false, error: '시간 범위를 1개 이상 추가해주세요.' };
+        }
+
+        if (![60, 90].includes(duration)) {
+                return {
+                        success: false,
+                        error: '수업 시간은 60분 또는 90분만 선택해주세요.',
+                };
+        }
 
 	try {
 		validateTimeWindows(parsedWindows);
@@ -356,11 +363,11 @@ export async function updateCourse(
 	const title = String(formData.get('title') ?? '').trim();
 	const courseSubject = String(formData.get('subject') ?? '').trim();
 	const gradeRange = String(formData.get('grade_range') ?? '').trim();
-	const description = String(formData.get('description') ?? '').trim();
-	const capacity = Number(formData.get('capacity') ?? 4);
-	const duration = Number(formData.get('duration_minutes') ?? 60);
-	const weeks = Number(formData.get('weeks') ?? 1);
-	const parsedWindows = parseTimeWindows(
+        const description = String(formData.get('description') ?? '').trim();
+        const capacity = Number(formData.get('capacity') ?? 4);
+        const duration = Number(formData.get('duration_minutes') ?? 60);
+        const weeks = Number(formData.get('weeks') ?? 1);
+        const parsedWindows = parseTimeWindows(
 		String(formData.get('time_windows') ?? '')
 	);
 	const currentImageUrl = String(
@@ -381,9 +388,16 @@ export async function updateCourse(
 		return { success: false, error: '설명은 800자 이내로 작성해주세요.' };
 	}
 
-	if (parsedWindows.length === 0) {
-		return { success: false, error: '시간 범위를 1개 이상 추가해주세요.' };
-	}
+        if (parsedWindows.length === 0) {
+                return { success: false, error: '시간 범위를 1개 이상 추가해주세요.' };
+        }
+
+        if (![60, 90].includes(duration)) {
+                return {
+                        success: false,
+                        error: '수업 시간은 60분 또는 90분만 선택해주세요.',
+                };
+        }
 
 	try {
 		validateTimeWindows(parsedWindows);
@@ -663,23 +677,25 @@ export async function createTimeWindow(courseId: string, formData: FormData) {
 		throw new Error('요일과 시간을 올바르게 입력해주세요.');
 	}
 
-	let slotWindows: {
-		start_time: string;
-		end_time: string;
-		day_of_week: number;
-	}[];
-	try {
-		slotWindows = splitWindowByDuration(
-			{
-				day_of_week: dayOfWeek,
-				start_time: startTime,
-				end_time: endTime,
-			},
-			course.duration_minutes
-		);
-	} catch (error) {
-		throw new Error((error as Error).message);
-	}
+        const slotDuration = Number(course.duration_minutes) || 60;
+
+        let slotWindows: {
+                start_time: string;
+                end_time: string;
+                day_of_week: number;
+        }[];
+        try {
+                slotWindows = splitWindowByDuration(
+                        {
+                                day_of_week: dayOfWeek,
+                                start_time: startTime,
+                                end_time: endTime,
+                        },
+                        slotDuration
+                );
+        } catch (error) {
+                throw new Error((error as Error).message);
+        }
 
 	const rows = slotWindows.map((slot) => ({
 		course_id: courseId,

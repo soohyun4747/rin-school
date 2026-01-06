@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState, useEffect } from 'react';
+import type { ChangeEvent } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { CourseUpdateResult } from '@/app/actions/admin';
 import { updateCourse } from '@/app/actions/admin';
@@ -28,27 +29,67 @@ interface Props {
 }
 
 export function CourseEditForm({ course, instructors, windows }: Props) {
-	const router = useRouter();
-	const initialState: CourseUpdateResult = {
-		success: false,
-		error: undefined,
-	};
-	const [state, formAction, isPending] = useActionState(
-		updateCourse.bind(null, course.id),
-		initialState
-	);
+        const router = useRouter();
+        const initialState: CourseUpdateResult = {
+                success: false,
+                error: undefined,
+        };
+        const [state, formAction, isPending] = useActionState(
+                updateCourse.bind(null, course.id),
+                initialState
+        );
+        const fileInputRef = useRef<HTMLInputElement | null>(null);
+        const [previewUrl, setPreviewUrl] = useState<string | null>(
+                course.image_url ?? null
+        );
+        const [selectedFileName, setSelectedFileName] = useState<string>(
+                course.image_url ? '현재 이미지를 유지합니다.' : '선택된 이미지가 없습니다.'
+        );
+        const [hasNewFile, setHasNewFile] = useState(false);
 
-	useEffect(() => {
-		if (state?.success) {
-			router.push(`/admin/courses/${course.id}`);
-		}
-	}, [state?.success, course.id, router]);
+        useEffect(() => {
+                if (state?.success) {
+                        router.push(`/admin/courses/${course.id}`);
+                }
+        }, [state?.success, course.id, router]);
 
-	useEffect(() => {
-		if (state.error) {
-			alert(state.error);
-		}
-	}, [state.error]);
+        useEffect(() => {
+                if (state.error) {
+                        alert(state.error);
+                }
+        }, [state.error]);
+
+        useEffect(() => {
+                return () => {
+                        if (previewUrl?.startsWith('blob:')) {
+                                URL.revokeObjectURL(previewUrl);
+                        }
+                };
+        }, [previewUrl]);
+
+        const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+                const file = event.target.files?.[0];
+                if (!file) {
+                        setPreviewUrl(course.image_url ?? null);
+                        setSelectedFileName(
+                                course.image_url
+                                        ? '현재 이미지를 유지합니다.'
+                                        : '선택된 이미지가 없습니다.'
+                        );
+                        setHasNewFile(false);
+                        return;
+                }
+
+                const objectUrl = URL.createObjectURL(file);
+                setPreviewUrl((prev) => {
+                        if (prev?.startsWith('blob:')) {
+                                URL.revokeObjectURL(prev);
+                        }
+                        return objectUrl;
+                });
+                setSelectedFileName(file.name);
+                setHasNewFile(true);
+        };
 
 	return (
 		<div className='space-y-4'>
@@ -145,33 +186,53 @@ export function CourseEditForm({ course, instructors, windows }: Props) {
 					initialWindows={windows}
 				/>
 
-				<Card className='md:col-span-2'>
-					<CardHeader>
-						<CardTitle>이미지</CardTitle>
-					</CardHeader>
-					<CardContent className='space-y-2'>
-						<label className='text-sm font-medium text-slate-700'>
-							대표 이미지 (선택)
-						</label>
-						<Input
-							name='image'
-							type='file'
-							accept='image/*'
-						/>
-						{course.image_url && (
-							<p className='text-xs text-slate-600'>
-								현재 이미지가 유지됩니다. 새 이미지를 업로드하면
-								교체됩니다.
-							</p>
-						)}
-						{!course.image_url && (
-							<p className='text-xs text-slate-500'>
-								수업 소개에 사용됩니다. (JPG, PNG 등 이미지
-								파일)
-							</p>
-						)}
-					</CardContent>
-				</Card>
+                                <Card className='md:col-span-2'>
+                                        <CardHeader>
+                                                <CardTitle>이미지</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className='space-y-2'>
+                                                <label className='text-sm font-medium text-slate-700'>
+                                                        대표 이미지 (선택)
+                                                </label>
+                                                <input
+                                                        ref={fileInputRef}
+                                                        name='image'
+                                                        type='file'
+                                                        accept='image/*'
+                                                        className='sr-only'
+                                                        onChange={handleFileChange}
+                                                />
+                                                <div className='flex items-center gap-2'>
+                                                        <Button
+                                                                type='button'
+                                                                variant='secondary'
+                                                                onClick={() => fileInputRef.current?.click()}>
+                                                                이미지 업로드
+                                                        </Button>
+                                                        <span className='text-xs text-slate-600'>
+                                                                {selectedFileName}
+                                                        </span>
+                                                </div>
+                                                {previewUrl && (
+                                                        <div className='overflow-hidden rounded-md border border-slate-200'>
+                                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                <img
+                                                                        src={previewUrl}
+                                                                        alt='선택한 이미지 미리보기'
+                                                                        className='h-40 w-full object-cover'
+                                                                />
+                                                        </div>
+                                                )}
+                                                <p className='text-xs text-slate-500'>
+                                                        수업 소개에 사용됩니다. (JPG, PNG 등 이미지 파일)
+                                                </p>
+                                                {course.image_url && !hasNewFile && (
+                                                        <p className='text-xs text-slate-600'>
+                                                                새 이미지를 선택하지 않으면 현재 이미지가 유지됩니다.
+                                                        </p>
+                                                )}
+                                        </CardContent>
+                                </Card>
 
 				{state?.error && (
 					<div className='md:col-span-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 border border-red-100'>

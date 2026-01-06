@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import type { ChangeEvent } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createCourse } from "@/app/actions/admin";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,9 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
   const initialState = { success: false, error: undefined as string | undefined };
   const [state, formAction, isPending] = useActionState(createCourse, initialState);
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string>('선택된 이미지가 없습니다.');
 
   useEffect(() => {
     if (state?.success) {
@@ -43,6 +47,32 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
       onClose();
     }
   }, [state?.success, onClose, router]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setPreviewUrl(null);
+      setSelectedFileName('선택된 이미지가 없습니다.');
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl((prev) => {
+      if (prev?.startsWith("blob:")) {
+        URL.revokeObjectURL(prev);
+      }
+      return objectUrl;
+    });
+    setSelectedFileName(file.name);
+  };
 
   return (
     <div className="relative z-10 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
@@ -111,7 +141,26 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
             </CardHeader>
             <CardContent className="space-y-2">
               <label className="text-sm font-medium text-slate-700">대표 이미지 (선택)</label>
-              <Input name="image" type="file" accept="image/*" />
+              <input
+                ref={fileInputRef}
+                name="image"
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={handleFileChange}
+              />
+              <div className="flex items-center gap-2">
+                <Button type="button" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+                  이미지 업로드
+                </Button>
+                <span className="text-xs text-slate-600">{selectedFileName}</span>
+              </div>
+              {(previewUrl ?? null) && (
+                <div className="overflow-hidden rounded-md border border-slate-200">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={previewUrl ?? undefined} alt="선택한 이미지 미리보기" className="h-40 w-full object-cover" />
+                </div>
+              )}
               <p className="text-xs text-slate-500">수업 소개에 사용됩니다. (JPG, PNG 등 이미지 파일)</p>
             </CardContent>
           </Card>
