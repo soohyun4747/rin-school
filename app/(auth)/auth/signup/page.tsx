@@ -155,17 +155,19 @@ ID, 성명, 비밀번호, 주소, 휴대폰 번호, 이메일, 14세 미만 가�
 회원탈퇴 시까지 (단, 관계 법령에 보존 근거가 있는 경우 해당 기간 시까지 보유, 개인정보처리방침에서 확인 가능)`;
 
 export default function SignupPage() {
-	const [email, setEmail] = useState('');
-	const [password, setPassword] = useState('');
-	const [confirmPassword, setConfirmPassword] = useState('');
-	const [name, setName] = useState('');
-	const [phone, setPhone] = useState('');
-	const [birthdate, setBirthdate] = useState('');
-	const [kakaoId, setKakaoId] = useState('');
-	const [country, setCountry] = useState('');
-	const [role, setRole] = useState('student');
-	const [agreedTerms, setAgreedTerms] = useState(false);
-	const [agreedPrivacy, setAgreedPrivacy] = useState(false);
+        const [username, setUsername] = useState('');
+        const [email, setEmail] = useState('');
+        const [password, setPassword] = useState('');
+        const [confirmPassword, setConfirmPassword] = useState('');
+        const [name, setName] = useState('');
+        const [phone, setPhone] = useState('');
+        const [birthdate, setBirthdate] = useState('');
+        const [kakaoId, setKakaoId] = useState('');
+        const [country, setCountry] = useState('');
+        const [guardianName, setGuardianName] = useState('');
+        const [role, setRole] = useState('student');
+        const [agreedTerms, setAgreedTerms] = useState(false);
+        const [agreedPrivacy, setAgreedPrivacy] = useState(false);
 	const [ageConfirmed, setAgeConfirmed] = useState(true);
 	const [guardianEmail, setGuardianEmail] = useState('');
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -179,46 +181,56 @@ export default function SignupPage() {
 		setError(null);
 		setMessage(null);
 
-		try {
-			const guardianToken = crypto.randomUUID();
-			const trimmedPhone = phone.trim();
-			const trimmedGuardianEmail = guardianEmail.trim();
-			const supabase = getSupabaseBrowserClient();
+                try {
+                        const guardianToken = crypto.randomUUID();
+                        const trimmedUsername = username.trim();
+                        const trimmedEmail = email.trim();
+                        const trimmedPhone = phone.trim();
+                        const trimmedGuardianEmail = guardianEmail.trim();
+                        const trimmedGuardianName = guardianName.trim();
+                        const supabase = getSupabaseBrowserClient();
 
 			if (password !== confirmPassword) {
 				setError('비밀번호와 비밀번호 확인이 일치하지 않습니다.');
-				return;
-			}
+                                return;
+                        }
 
-			if (!agreedTerms || !agreedPrivacy) {
-				setError('필수 동의를 모두 완료해주세요.');
-				return;
-			}
+                        if (!agreedTerms || !agreedPrivacy) {
+                                setError('필수 동의를 모두 완료해주세요.');
+                                return;
+                        }
 
-			if (!ageConfirmed && !trimmedGuardianEmail) {
-				setError('14세 미만인 경우 보호자 이메일을 입력해야 합니다.');
-				return;
-			}
+                        if (!trimmedUsername) {
+                                setError('아이디를 입력해주세요.');
+                                return;
+                        }
 
-			const { data: signUpData, error: signUpError } =
-				await supabase.auth.signUp({
-					email,
-					password,
-					options: {
-						emailRedirectTo: `${
-							process.env.NEXT_PUBLIC_APP_URL
-						}/auth/login`,
-						data: {
-							role,
-							name,
-							phone: trimmedPhone,
-							birthdate: birthdate || null,
-							kakao_id: kakaoId || null,
-							country: country || null,
-							age_confirmed: ageConfirmed,
-							guardian_email: ageConfirmed
-								? null
-								: trimmedGuardianEmail,
+                        if (!ageConfirmed && !trimmedGuardianEmail) {
+                                setError('14세 미만인 경우 보호자 이메일을 입력해야 합니다.');
+                                return;
+                        }
+
+                        const { data: signUpData, error: signUpError } =
+                                await supabase.auth.signUp({
+                                        email: trimmedEmail,
+                                        password,
+                                        options: {
+                                                emailRedirectTo: `${
+                                                        process.env.NEXT_PUBLIC_APP_URL
+                                                }/auth/login`,
+                                                data: {
+                                                        role,
+                                                        username: trimmedUsername,
+                                                        name,
+                                                        phone: trimmedPhone,
+                                                        birthdate: birthdate || null,
+                                                        kakao_id: kakaoId || null,
+                                                        country: country || null,
+                                                        guardian_name: trimmedGuardianName || null,
+                                                        age_confirmed: ageConfirmed,
+                                                        guardian_email: ageConfirmed
+                                                                ? null
+                                                                : trimmedGuardianEmail,
 							guardian_status: ageConfirmed
 								? 'not_required'
 								: 'pending',
@@ -274,12 +286,23 @@ export default function SignupPage() {
 					</p>
 				</CardHeader>
 				<CardContent>
-					<form
-						onSubmit={handleSubmit}
-						className='space-y-3'>
-						<div>
-							<label className='text-sm font-medium text-slate-700'>
-								이메일
+                                        <form
+                                                onSubmit={handleSubmit}
+                                                className='space-y-3'>
+                                                <div>
+                                                        <label className='text-sm font-medium text-slate-700'>
+                                                                아이디
+                                                        </label>
+                                                        <Input
+                                                                value={username}
+                                                                onChange={(e) => setUsername(e.target.value)}
+                                                                placeholder='영문 또는 숫자 조합'
+                                                                required
+                                                        />
+                                                </div>
+                                                <div>
+                                                        <label className='text-sm font-medium text-slate-700'>
+                                                                이메일
 							</label>
 							<Input
 								value={email}
@@ -437,9 +460,9 @@ export default function SignupPage() {
 							</div>
 						</div>
 						<div className='space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3'>
-							<div className='flex flex-col gap-2'>
-								<label className='flex items-center gap-2 text-sm font-semibold text-slate-800'>
-									<input
+                                                        <div className='flex flex-col gap-2'>
+                                                                <label className='flex items-center gap-2 text-sm font-semibold text-slate-800'>
+                                                                        <input
 										type='checkbox'
 										checked={ageConfirmed}
 										onChange={(e) =>
@@ -452,12 +475,27 @@ export default function SignupPage() {
 								<p className='text-xs text-slate-600'>
 									만 14세 미만일 경우 보호자 이메일을 입력하면
 									동의서 확인을 요청합니다.
-								</p>
-							</div>
-							{!ageConfirmed && (
-								<div className='space-y-1'>
-									<label className='text-xs font-medium text-slate-700'>
-										보호자 이메일 (필수)
+                                                                </p>
+                                                        </div>
+                                                        {!ageConfirmed && (
+                                                                <div className='space-y-1'>
+                                                                        <label className='text-xs font-medium text-slate-700'>
+                                                                                보호자 이름 (선택)
+                                                                        </label>
+                                                                        <Input
+                                                                                type='text'
+                                                                                value={guardianName}
+                                                                                onChange={(e) =>
+                                                                                        setGuardianName(e.target.value)
+                                                                                }
+                                                                                placeholder='홍길동'
+                                                                        />
+                                                                </div>
+                                                        )}
+                                                        {!ageConfirmed && (
+                                                                <div className='space-y-1'>
+                                                                        <label className='text-xs font-medium text-slate-700'>
+                                                                                보호자 이메일 (필수)
 									</label>
 									<Input
 										type='email'

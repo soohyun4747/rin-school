@@ -4,12 +4,14 @@ create extension if not exists "uuid-ossp";
 create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   role text not null default 'student' check (role in ('admin','student','instructor')),
+  username text not null default '',
   name text not null default '',
   email text not null default '',
   phone text,
   birthdate date,
   kakao_id text,
   country text,
+  guardian_name text,
   created_at timestamptz not null default now()
 );
 
@@ -149,16 +151,18 @@ begin
     case when meta_age then 'not_required' else 'pending' end
   );
 
-  insert into public.profiles(id, role, name, phone, email, birthdate, kakao_id, country)
+  insert into public.profiles(id, role, username, name, phone, email, birthdate, kakao_id, country, guardian_name)
   values (
     new.id,
     coalesce(meta->>'role', 'student'),
+    coalesce(meta->>'username', split_part(new.email, '@', 1)),
     coalesce(meta->>'name', split_part(new.email, '@', 1)),
     meta->>'phone',
     coalesce(new.email, ''),
     to_date(meta->>'birthdate', 'YYYY-MM-DD'),
     meta->>'kakao_id',
-    meta->>'country'
+    meta->>'country',
+    meta->>'guardian_name'
   );
 
   insert into public.user_consents(user_id, age_confirmed, guardian_email, guardian_status, guardian_token)

@@ -13,33 +13,39 @@ export interface Database {
         Row: {
           id: string;
           role: "admin" | "student" | "instructor";
+          username: string;
           name: string;
           email: string;
           phone: string | null;
           birthdate: string | null;
           kakao_id: string | null;
           country: string | null;
+          guardian_name: string | null;
           created_at: string;
         };
         Insert: {
           id: string;
           role?: "admin" | "student" | "instructor";
+          username?: string;
           name?: string;
           email?: string;
           phone?: string | null;
           birthdate?: string | null;
           kakao_id?: string | null;
           country?: string | null;
+          guardian_name?: string | null;
           created_at?: string;
         };
         Update: {
           role?: "admin" | "student" | "instructor";
+          username?: string;
           name?: string;
           email?: string;
           phone?: string | null;
           birthdate?: string | null;
           kakao_id?: string | null;
           country?: string | null;
+          guardian_name?: string | null;
           created_at?: string;
         };
       };

@@ -17,11 +17,11 @@ export async function getSessionAndProfile() {
 		return { session: null, profile: null } as const;
 	}
 
-	const { data: profile } = await supabase
-		.from('profiles')
-		.select('id, role, name, phone, email, birthdate, kakao_id, country')
-		.eq('id', user.id)
-		.single();
+        const { data: profile } = await supabase
+                .from('profiles')
+                .select('id, role, username, name, phone, email, birthdate, kakao_id, country, guardian_name')
+                .eq('id', user.id)
+                .single();
 
 	// session은 굳이 필요 없으면 null로 두셔도 됩니다.
 	// (원하면 아래처럼 getSession()을 "참고용"으로만 같이 받아도 되지만,
