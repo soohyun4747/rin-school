@@ -30,7 +30,7 @@ export default async function AdminCoursesPage() {
                         .select(
                                 'id, title, subject, grade_range, description, capacity, duration_minutes, created_at, image_url, weeks, display_order, is_closed'
                         )
-                        .order('display_order', { ascending: true, nullsLast: true })
+                        .order('display_order', { ascending: false, nullsLast: true })
                         .order('created_at', { ascending: false }),
                 supabase
                         .from('profiles')

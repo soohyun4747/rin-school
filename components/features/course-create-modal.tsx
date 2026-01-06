@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createCourse } from "@/app/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,12 +35,14 @@ export function CourseCreateModal({ instructors }: Props) {
 function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => void }) {
   const initialState = { success: false, error: undefined as string | undefined };
   const [state, formAction, isPending] = useActionState(createCourse, initialState);
+  const router = useRouter();
 
   useEffect(() => {
     if (state?.success) {
+      router.refresh();
       onClose();
     }
-  }, [state?.success, onClose]);
+  }, [state?.success, onClose, router]);
 
   return (
     <div className="relative z-10 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl">

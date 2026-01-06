@@ -20,7 +20,7 @@ export default async function ClassesPage() {
         const { data: courses, error } = await supabase
                 .from('courses')
                 .select('id, title, subject, grade_range, description, image_url, is_closed')
-                .order('display_order', { ascending: true, nullsLast: true })
+                .order('display_order', { ascending: false, nullsLast: true })
                 .order('created_at', { ascending: false })
                 .limit(12);
 

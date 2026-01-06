@@ -29,13 +29,13 @@ export default async function AdminCourseEditPage({
                                 )
                                 .eq('id', id)
                                 .single(),
-			supabase
-				.from('course_time_windows')
-				.select(
-					'day_of_week, start_time, end_time, instructor_id, instructor_name'
-				)
-				.eq('course_id', id)
-				.order('day_of_week', { ascending: true })
+                        supabase
+                                .from('course_time_windows')
+                                .select(
+                                        'id, day_of_week, start_time, end_time, instructor_id, instructor_name'
+                                )
+                                .eq('course_id', id)
+                                .order('day_of_week', { ascending: true })
 				.order('start_time', { ascending: true }),
 			supabase
 				.from('profiles')
@@ -46,11 +46,12 @@ export default async function AdminCourseEditPage({
 
 	if (!course) notFound();
 
-	const mappedWindows: EditableTimeWindow[] =
-		windows?.map((w) => ({
-			day_of_week: w.day_of_week,
-			start_time: w.start_time.slice(0, 5),
-			end_time: w.end_time.slice(0, 5),
+        const mappedWindows: EditableTimeWindow[] =
+                windows?.map((w) => ({
+                        id: w.id,
+                        day_of_week: w.day_of_week,
+                        start_time: w.start_time.slice(0, 5),
+                        end_time: w.end_time.slice(0, 5),
 			instructor_id: w.instructor_id,
 			instructor_name: w.instructor_name,
 		})) ?? [];

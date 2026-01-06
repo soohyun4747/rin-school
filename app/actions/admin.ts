@@ -8,11 +8,12 @@ import { combineDayAndTime, splitWindowByDuration } from '@/lib/time';
 import { sendEmail } from '@/lib/email';
 
 type TimeWindowInput = {
-	day_of_week: number;
-	start_time: string;
-	end_time: string;
-	instructor_id?: string | null;
-	instructor_name?: string | null;
+        id?: string | null;
+        day_of_week: number;
+        start_time: string;
+        end_time: string;
+        instructor_id?: string | null;
+        instructor_name?: string | null;
 };
 
 const ALLOWED_WEEKS = [1, 2, 3, 4, 6, 8, 12];
@@ -20,17 +21,21 @@ const ALLOWED_WEEKS = [1, 2, 3, 4, 6, 8, 12];
 function parseTimeWindows(raw: string): TimeWindowInput[] {
 	if (!raw) return [];
 
-	try {
-		const parsed = JSON.parse(raw) as TimeWindowInput[];
-		if (!Array.isArray(parsed)) return [];
-		return parsed.map((w) => ({
-			...w,
-			instructor_id: w.instructor_id || null,
-			instructor_name: w.instructor_name || null,
-		}));
-	} catch (error) {
-		console.error('time window parse error', error);
-		return [];
+        try {
+                const parsed = JSON.parse(raw) as Array<TimeWindowInput & { id?: string }>;
+                if (!Array.isArray(parsed)) return [];
+                return parsed.map((w) => {
+                        const id = typeof w.id === 'string' && w.id.trim() ? w.id.trim() : null;
+                        return {
+                                ...w,
+                                id,
+                                instructor_id: w.instructor_id || null,
+                                instructor_name: w.instructor_name || null,
+                        };
+                });
+        } catch (error) {
+                console.error('time window parse error', error);
+                return [];
 	}
 }
 
@@ -175,17 +180,28 @@ export async function createCourse(
 	}
 	validateTimeWindows(parsedWindows);
 
-	let slotWindows: (TimeWindowInput & {
-		start_time: string;
-		end_time: string;
-	})[] = [];
-	try {
-		slotWindows = parsedWindows.flatMap((window) =>
-			splitWindowByDuration(window, duration)
-		);
-	} catch (error) {
-		return { success: false, error: (error as Error).message };
-	}
+        let slotWindows: Array<
+                TimeWindowInput & {
+                        start_time: string;
+                        end_time: string;
+                }
+        > = [];
+        try {
+                slotWindows = parsedWindows.flatMap((window) => {
+                        const slots = splitWindowByDuration(window, duration).map((slot) => ({
+                                ...slot,
+                                id: window.id ?? null,
+                        }));
+
+                        if (slots.length > 1 && window.id) {
+                                return slots.map((slot) => ({ ...slot, id: null }));
+                        }
+
+                        return slots;
+                });
+        } catch (error) {
+                return { success: false, error: (error as Error).message };
+        }
 
 	if (imageFile instanceof File && imageFile.size > 0) {
 		if (imageFile.type && !imageFile.type.startsWith('image/')) {
@@ -356,17 +372,28 @@ export async function updateCourse(
 	}
 	validateTimeWindows(parsedWindows);
 
-	let slotWindows: (TimeWindowInput & {
-		start_time: string;
-		end_time: string;
-	})[] = [];
-	try {
-		slotWindows = parsedWindows.flatMap((window) =>
-			splitWindowByDuration(window, duration)
-		);
-	} catch (error) {
-		return { success: false, error: (error as Error).message };
-	}
+        let slotWindows: Array<
+                TimeWindowInput & {
+                        start_time: string;
+                        end_time: string;
+                }
+        > = [];
+        try {
+                slotWindows = parsedWindows.flatMap((window) => {
+                        const slots = splitWindowByDuration(window, duration).map((slot) => ({
+                                ...slot,
+                                id: window.id ?? null,
+                        }));
+
+                        if (slots.length > 1 && window.id) {
+                                return slots.map((slot) => ({ ...slot, id: null }));
+                        }
+
+                        return slots;
+                });
+        } catch (error) {
+                return { success: false, error: (error as Error).message };
+        }
 
 	if (imageFile instanceof File && imageFile.size > 0) {
 		if (imageFile.type && !imageFile.type.startsWith('image/')) {
@@ -426,39 +453,78 @@ export async function updateCourse(
 		};
 	}
 
-	const timeWindows = slotWindows.map((w) => ({
-		course_id: courseId,
-		day_of_week: w.day_of_week,
-		start_time: w.start_time,
-		end_time: w.end_time,
-		instructor_id: w.instructor_id || null,
-		instructor_name: w.instructor_name || null,
-		capacity,
-	}));
+        const timeWindows = slotWindows.map((w) => ({
+                ...(w.id ? { id: w.id } : {}),
+                course_id: courseId,
+                day_of_week: w.day_of_week,
+                start_time: w.start_time,
+                end_time: w.end_time,
+                instructor_id: w.instructor_id || null,
+                instructor_name: w.instructor_name || null,
+                capacity,
+        }));
 
-	const { error: deleteError } = await supabase
-		.from('course_time_windows')
-		.delete()
-		.eq('course_id', courseId);
-	if (deleteError) {
-		console.error('course time window delete error:', deleteError);
-		return {
-			success: false,
-			error: '기존 시간 범위를 삭제하지 못했습니다. 다시 시도해주세요.',
-		};
-	}
+        const { data: existingWindows, error: existingFetchError } = await supabase
+                .from('course_time_windows')
+                .select('id')
+                .eq('course_id', courseId);
 
-	const { error: insertError } = await supabase
-		.from('course_time_windows')
-		.insert(timeWindows);
+        if (existingFetchError) {
+                console.error('course time window fetch error:', existingFetchError);
+                return {
+                        success: false,
+                        error: '현재 시간 정보를 불러오지 못했습니다.',
+                };
+        }
 
-	if (insertError) {
-		console.error('course time window insert error:', insertError);
-		return {
-			success: false,
-			error: '시간 정보를 저장하지 못했습니다. 다시 시도해주세요.',
-		};
-	}
+        const existingIds = new Set((existingWindows ?? []).map((w) => w.id));
+        const updatableRows = timeWindows.filter((w) => w.id && existingIds.has(w.id));
+        const insertRows = timeWindows.filter((w) => !w.id || !existingIds.has(w.id));
+        const idsToKeep = new Set(updatableRows.map((w) => w.id!));
+        const idsToDelete = [...existingIds].filter((id) => !idsToKeep.has(id));
+
+        if (idsToDelete.length > 0) {
+                const { error: deleteError } = await supabase
+                        .from('course_time_windows')
+                        .delete()
+                        .in('id', idsToDelete);
+
+                if (deleteError) {
+                        console.error('course time window delete error:', deleteError);
+                        return {
+                                success: false,
+                                error: '삭제된 시간 범위를 정리하지 못했습니다. 다시 시도해주세요.',
+                        };
+                }
+        }
+
+        if (updatableRows.length > 0) {
+                const { error: updateError } = await supabase
+                        .from('course_time_windows')
+                        .upsert(updatableRows);
+
+                if (updateError) {
+                        console.error('course time window update error:', updateError);
+                        return {
+                                success: false,
+                                error: '시간 정보를 업데이트하지 못했습니다. 다시 시도해주세요.',
+                        };
+                }
+        }
+
+        if (insertRows.length > 0) {
+                const { error: insertError } = await supabase
+                        .from('course_time_windows')
+                        .insert(insertRows);
+
+                if (insertError) {
+                        console.error('course time window insert error:', insertError);
+                        return {
+                                success: false,
+                                error: '시간 정보를 저장하지 못했습니다. 다시 시도해주세요.',
+                        };
+                }
+        }
 
         revalidatePath('/admin/courses');
         revalidatePath(`/admin/courses/${courseId}`);
@@ -518,15 +584,15 @@ export async function reorderCourses(courseIds: string[]) {
 	requireRole(profile.role, ['admin']);
 	const supabase = await getSupabaseServerClient();
 
-	// 병렬 업데이트
-	const results = await Promise.all(
-		courseIds.map((id, index) =>
-			supabase
-				.from('courses')
-				.update({ display_order: index + 1 })
-				.eq('id', id)
-		)
-	);
+        // 병렬 업데이트
+        const results = await Promise.all(
+                courseIds.map((id, index) =>
+                        supabase
+                                .from('courses')
+                                .update({ display_order: courseIds.length - index })
+                                .eq('id', id)
+                )
+        );
 
 	const error = results.find((r) => r.error)?.error;
 

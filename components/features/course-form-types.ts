@@ -5,9 +5,10 @@ export type InstructorOption = {
 };
 
 export type EditableTimeWindow = {
-	day_of_week: number;
-	start_time: string;
-	end_time: string;
-	instructor_id?: string | null;
-	instructor_name?: string | null;
+        id?: string;
+        day_of_week: number;
+        start_time: string;
+        end_time: string;
+        instructor_id?: string | null;
+        instructor_name?: string | null;
 };

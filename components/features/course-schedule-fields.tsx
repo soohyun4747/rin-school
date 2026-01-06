@@ -15,19 +15,19 @@ interface Props {
   initialWindows?: EditableTimeWindow[];
 }
 
-type TimeWindowField = EditableTimeWindow & { id: string };
+type TimeWindowField = EditableTimeWindow & { clientId: string };
 
 export function CourseScheduleFields({ instructors, initialWeeks, initialWindows }: Props) {
   const idPrefix = useId();
   const [windows, setWindows] = useState<TimeWindowField[]>(() => [
     ...(initialWindows?.length
       ? initialWindows.map((window, index) => ({
-          id: `${idPrefix}-${index}`,
+          clientId: `${idPrefix}-${index}`,
           ...window,
         }))
       : [
           {
-            id: `${idPrefix}-0`,
+            clientId: `${idPrefix}-0`,
             day_of_week: 1,
             start_time: "",
             end_time: "",
@@ -38,7 +38,8 @@ export function CourseScheduleFields({ instructors, initialWeeks, initialWindows
   const windowsPayload = useMemo(
     () =>
       JSON.stringify(
-        windows.map(({ day_of_week, start_time, end_time, instructor_id, instructor_name }) => ({
+        windows.map(({ day_of_week, start_time, end_time, instructor_id, instructor_name, id }) => ({
+          id,
           day_of_week,
           start_time,
           end_time,
@@ -53,7 +54,7 @@ export function CourseScheduleFields({ instructors, initialWeeks, initialWindows
     setWindows((prev) => [
       ...prev,
       {
-        id: `${idPrefix}-${prev.length}`,
+        clientId: `${idPrefix}-${prev.length}`,
         day_of_week: 1,
         start_time: "",
         end_time: "",
@@ -61,15 +62,15 @@ export function CourseScheduleFields({ instructors, initialWeeks, initialWindows
     ]);
   };
 
-  const updateWindow = (id: string, patch: Partial<TimeWindowField>) => {
-    setWindows((prev) => prev.map((w) => (w.id === id ? { ...w, ...patch } : w)));
+  const updateWindow = (clientId: string, patch: Partial<TimeWindowField>) => {
+    setWindows((prev) => prev.map((w) => (w.clientId === clientId ? { ...w, ...patch } : w)));
   };
 
-  const removeWindow = (id: string) => {
+  const removeWindow = (clientId: string) => {
     setWindows((prev) => {
       if (prev.length === 1) return prev;
       if (!confirm("이 시간을 삭제하시겠습니까?")) return prev;
-      return prev.filter((w) => w.id !== id);
+      return prev.filter((w) => w.clientId !== clientId);
     });
   };
 
@@ -105,14 +106,14 @@ export function CourseScheduleFields({ instructors, initialWeeks, initialWindows
         <div className="space-y-2">
           {windows.map((window, index) => (
             <div
-              key={window.id}
+              key={window.clientId}
               className="grid grid-cols-1 gap-2 rounded-md border border-slate-200 p-3 md:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto]"
             >
               <div className="space-y-1">
                 <label className="text-xs text-slate-600">요일</label>
                 <Select
                   value={window.day_of_week.toString()}
-                  onChange={(e) => updateWindow(window.id, { day_of_week: Number(e.target.value) })}
+                  onChange={(e) => updateWindow(window.clientId, { day_of_week: Number(e.target.value) })}
                 >
                   {days.map((label, idx) => (
                     <option key={label} value={idx}>
@@ -126,7 +127,7 @@ export function CourseScheduleFields({ instructors, initialWeeks, initialWindows
                 <Input
                   type="time"
                   value={window.start_time}
-                  onChange={(e) => updateWindow(window.id, { start_time: e.target.value })}
+                  onChange={(e) => updateWindow(window.clientId, { start_time: e.target.value })}
                   required
                 />
               </div>
@@ -135,7 +136,7 @@ export function CourseScheduleFields({ instructors, initialWeeks, initialWindows
                 <Input
                   type="time"
                   value={window.end_time}
-                  onChange={(e) => updateWindow(window.id, { end_time: e.target.value })}
+                  onChange={(e) => updateWindow(window.clientId, { end_time: e.target.value })}
                   required
                 />
               </div>
@@ -144,7 +145,7 @@ export function CourseScheduleFields({ instructors, initialWeeks, initialWindows
                 <Select
                   value={window.instructor_id ?? ""}
                   onChange={(e) =>
-                    updateWindow(window.id, {
+                    updateWindow(window.clientId, {
                       instructor_id: e.target.value || undefined,
                       instructor_name: e.target.value ? "" : window.instructor_name,
                     })
@@ -163,7 +164,12 @@ export function CourseScheduleFields({ instructors, initialWeeks, initialWindows
                 <Input
                   placeholder="예: 외부 강사"
                   value={window.instructor_name ?? ""}
-                  onChange={(e) => updateWindow(window.id, { instructor_name: e.target.value, instructor_id: e.target.value ? undefined : window.instructor_id })}
+                  onChange={(e) =>
+                    updateWindow(window.clientId, {
+                      instructor_name: e.target.value,
+                      instructor_id: e.target.value ? undefined : window.instructor_id,
+                    })
+                  }
                   disabled={Boolean(window.instructor_id)}
                 />
               </div>
@@ -172,7 +178,7 @@ export function CourseScheduleFields({ instructors, initialWeeks, initialWindows
                   type="button"
                   variant="ghost"
                   className="text-sm text-red-600"
-                  onClick={() => removeWindow(window.id)}
+                  onClick={() => removeWindow(window.clientId)}
                   disabled={windows.length === 1 && index === 0}
                 >
                   삭제
