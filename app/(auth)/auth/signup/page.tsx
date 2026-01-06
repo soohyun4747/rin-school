@@ -238,6 +238,7 @@ export default function SignupPage() {
 						},
 					},
 				});
+			
 
 			if (signUpError) {
 				console.error({ signUpError });

@@ -102,7 +102,7 @@ export default async function AdminStudentDetailPage({
 				<Link
 					href='/admin/students'
 					className='text-sm text-[var(--primary)] hover:underline'>
-					학생 목록으로 돌아가기
+					목록으로 돌아가기
 				</Link>
 			</div>
 
