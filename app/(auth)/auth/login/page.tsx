@@ -9,68 +9,82 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 export default function LoginPage() {
-        const [identifier, setIdentifier] = useState('');
-        const [password, setPassword] = useState('');
-        const [error, setError] = useState<string | null>(null);
-        const [needsConfirmation, setNeedsConfirmation] = useState(false);
+	const [identifier, setIdentifier] = useState('');
+	const [password, setPassword] = useState('');
+	const [error, setError] = useState<string | null>(null);
+	const [needsConfirmation, setNeedsConfirmation] = useState(false);
 	const [resendMessage, setResendMessage] = useState<string | null>(null);
 	const [isResending, setIsResending] = useState(false);
 	const router = useRouter();
 	const searchParams = useSearchParams();
-        const confirmationMessage =
-                searchParams.get('type') === 'signup'
-                        ? '이메일 인증이 완료되었습니다. 로그인해주세요.'
-                        : null;
+	const confirmationMessage =
+		searchParams.get('type') === 'signup'
+			? '이메일 인증이 완료되었습니다. 로그인해주세요.'
+			: null;
 
-        const resolveEmail = async (supabase: ReturnType<typeof getSupabaseBrowserClient>) => {
-                const trimmed = identifier.trim();
-                if (!trimmed) {
-                        throw new Error('아이디 또는 이메일을 입력해주세요.');
-                }
+	console.log({
+		url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+		anon_key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+	});
 
-                if (trimmed.includes('@')) {
-                        return trimmed;
-                }
+	const resolveEmail = async (
+		supabase: ReturnType<typeof getSupabaseBrowserClient>,
+	) => {
+		const trimmed = identifier.trim();
+		if (!trimmed) {
+			throw new Error('아이디 또는 이메일을 입력해주세요.');
+		}
 
-                const { data, error: profileError } = await supabase
-                        .from('profiles')
-                        .select('email')
-                        .eq('username', trimmed)
-                        .maybeSingle();
+		if (trimmed.includes('@')) {
+			return trimmed;
+		}
 
-                if (profileError) {
-                        console.error(profileError);
-                        throw new Error('로그인 중 오류가 발생했습니다.');
-                }
+		const { data, error: profileError } = await supabase
+			.from('profiles')
+			.select('email')
+			.eq('username', trimmed)
+			.maybeSingle();
 
-                if (!data?.email) {
-                        throw new Error('해당 아이디로 등록된 이메일을 찾을 수 없습니다.');
-                }
+		if (profileError) {
+			console.error(profileError);
+			throw new Error('로그인 중 오류가 발생했습니다.');
+		}
 
-                return data.email;
-        };
+		if (!data?.email) {
+			throw new Error('해당 아이디로 등록된 이메일을 찾을 수 없습니다.');
+		}
 
-        const handleSubmit = async (e: React.FormEvent) => {
-                e.preventDefault();
-                const supabase = getSupabaseBrowserClient();
-                setError(null);
-                setNeedsConfirmation(false);
-                setResendMessage(null);
+		return data.email;
+	};
 
-                let emailForLogin: string;
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		const supabase = getSupabaseBrowserClient();
+		setError(null);
+		setNeedsConfirmation(false);
+		setResendMessage(null);
 
-                try {
-                        emailForLogin = await resolveEmail(supabase);
-                } catch (resolveError) {
-                        setError(resolveError instanceof Error ? resolveError.message : '로그인에 실패했습니다.');
-                        return;
-                }
+		let emailForLogin: string;
 
-                const { data, error: signInError } =
-                        await supabase.auth.signInWithPassword({ email: emailForLogin, password });
-                if (signInError) {
-                        setError(signInError.message);
-                        if (signInError.message.toLowerCase().includes('confirm')) {
+		try {
+			emailForLogin = await resolveEmail(supabase);
+		} catch (resolveError) {
+			setError(
+				resolveError instanceof Error
+					? resolveError.message
+					: '로그인에 실패했습니다.',
+			);
+			return;
+		}
+
+		const { data, error: signInError } =
+			await supabase.auth.signInWithPassword({
+				email: emailForLogin,
+				password,
+			});
+		if (signInError) {
+			setError(signInError.message);
+			if (signInError.message.toLowerCase().includes('confirm')) {
 				setNeedsConfirmation(true);
 			}
 			return;
@@ -110,37 +124,43 @@ export default function LoginPage() {
 		});
 	};
 
-        const handleResendConfirmation = async () => {
-                if (!identifier.trim()) {
-                        setError('확인 메일을 보내기 위해 아이디 또는 이메일을 입력해주세요.');
-                        return;
-                }
+	const handleResendConfirmation = async () => {
+		if (!identifier.trim()) {
+			setError(
+				'확인 메일을 보내기 위해 아이디 또는 이메일을 입력해주세요.',
+			);
+			return;
+		}
 
-                const supabase = getSupabaseBrowserClient();
-                setIsResending(true);
-                setResendMessage(null);
+		const supabase = getSupabaseBrowserClient();
+		setIsResending(true);
+		setResendMessage(null);
 
-                try {
-                        const resolvedEmail = await resolveEmail(supabase);
+		try {
+			const resolvedEmail = await resolveEmail(supabase);
 
-                        const { error: resendError } = await supabase.auth.resend({
-                                type: 'signup',
-                                email: resolvedEmail,
-                        });
+			const { error: resendError } = await supabase.auth.resend({
+				type: 'signup',
+				email: resolvedEmail,
+			});
 
-                        if (resendError) {
-                                setResendMessage(resendError.message);
-                        } else {
-                                setResendMessage(
-                                        '확인 이메일을 다시 보냈습니다. 받은 편지함을 확인해주세요.'
-                                );
-                        }
-                } catch (resolveError) {
-                        setError(resolveError instanceof Error ? resolveError.message : '이메일 확인 중 오류가 발생했습니다.');
-                }
-                
-                setIsResending(false);
-        };
+			if (resendError) {
+				setResendMessage(resendError.message);
+			} else {
+				setResendMessage(
+					'확인 이메일을 다시 보냈습니다. 받은 편지함을 확인해주세요.',
+				);
+			}
+		} catch (resolveError) {
+			setError(
+				resolveError instanceof Error
+					? resolveError.message
+					: '이메일 확인 중 오류가 발생했습니다.',
+			);
+		}
+
+		setIsResending(false);
+	};
 
 	return (
 		<div className='flex flex-1 items-center justify-center bg-slate-50 py-12 min-h-[77vh]'>
@@ -156,15 +176,15 @@ export default function LoginPage() {
 						onSubmit={handleSubmit}
 						className='space-y-3'>
 						<div>
-                                                        <label className='text-sm font-medium text-slate-700'>
-                                                                아이디 또는 이메일
-                                                        </label>
-                                                        <Input
-                                                                value={identifier}
-                                                                onChange={(e) => setIdentifier(e.target.value)}
-                                                                type='text'
-                                                                required
-                                                        />
+							<label className='text-sm font-medium text-slate-700'>
+								아이디 또는 이메일
+							</label>
+							<Input
+								value={identifier}
+								onChange={(e) => setIdentifier(e.target.value)}
+								type='text'
+								required
+							/>
 						</div>
 						<div>
 							<label className='text-sm font-medium text-slate-700'>
