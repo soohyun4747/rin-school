@@ -22,11 +22,6 @@ export default function LoginPage() {
 			? '이메일 인증이 완료되었습니다. 로그인해주세요.'
 			: null;
 
-	console.log({
-		url: process.env.NEXT_PUBLIC_SUPABASE_URL,
-		anon_key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-	});
-
 	const resolveEmail = async (
 		supabase: ReturnType<typeof getSupabaseBrowserClient>,
 	) => {
