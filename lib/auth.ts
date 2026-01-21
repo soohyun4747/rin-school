@@ -4,6 +4,9 @@ import type { Tables } from '@/types/database';
 
 export type Role = Tables<'profiles'>['role'];
 
+const origin =
+  typeof window !== "undefined" ? window.location.origin : "https://rinschool.com";
+
 export async function getSessionAndProfile() {
 	const supabase = await getSupabaseServerClient();
 
@@ -40,7 +43,7 @@ export async function requireSession() {
 	const { session, profile } = await getSessionAndProfile();
 
 	if (!session || !profile) {
-		redirect('/auth/login');
+		redirect(`${origin}/auth/login`);
 	}
 
 	return { session, profile } as const;
@@ -48,6 +51,6 @@ export async function requireSession() {
 
 export function requireRole(profileRole: Role, allowed: Role[]) {
 	if (!allowed.includes(profileRole)) {
-		redirect('/auth/login');
+		redirect(`${origin}/auth/login`);
 	}
 }

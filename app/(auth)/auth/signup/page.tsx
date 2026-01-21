@@ -13,6 +13,9 @@ const roles = [
 	{ value: 'instructor', label: '강사' },
 ];
 
+const origin =
+  typeof window !== "undefined" ? window.location.origin : "https://rinschool.com";
+
 const TERMS_TEXT = `제1조 목적
 
 본 이용약관은 “사이트명”(이하 "사이트")의 서비스의 이용조건과 운영에 관한 제반 사항 규정을 목적으로 합니다.
@@ -215,9 +218,7 @@ export default function SignupPage() {
 					email: trimmedEmail,
 					password,
 					options: {
-						emailRedirectTo: `${
-							process.env.NEXT_PUBLIC_APP_URL
-						}/auth/login`,
+						emailRedirectTo: `${origin}/auth/login`,
 						data: {
 							role,
 							username: trimmedUsername,
@@ -238,7 +239,6 @@ export default function SignupPage() {
 						},
 					},
 				});
-			
 
 			if (signUpError) {
 				console.error({ signUpError });
@@ -251,7 +251,7 @@ export default function SignupPage() {
 				const baseUrl =
 					process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
 				const confirmUrl = `${baseUrl}/api/guardian-consent?user_id=${encodeURIComponent(
-					userId
+					userId,
 				)}&token=${encodeURIComponent(guardianToken)}`;
 				await fetch('/api/send-guardian-email', {
 					method: 'POST',
@@ -268,7 +268,7 @@ export default function SignupPage() {
 		} catch (err) {
 			console.error(err);
 			setError(
-				'회원가입 처리 중 오류가 발생했습니다. 다시 시도해주세요.'
+				'회원가입 처리 중 오류가 발생했습니다. 다시 시도해주세요.',
 			);
 		} finally {
 			setIsSubmitting(false);

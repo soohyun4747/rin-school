@@ -10,6 +10,9 @@ import { CourseApplicationForm } from '@/components/features/course-application-
 
 const days = ['일', '월', '화', '수', '목', '금', '토'];
 
+const origin =
+  typeof window !== "undefined" ? window.location.origin : "https://rinschool.com";
+
 export default async function StudentCourseDetail({
 	params,
 }: {
@@ -36,7 +39,7 @@ export default async function StudentCourseDetail({
         const course: ICourse = data;
 
         if (course.is_closed) {
-                redirect('/classes');
+                redirect(`${origin}/classes`);
         }
 
 	const { data: windows, error } = await supabase
@@ -74,7 +77,7 @@ export default async function StudentCourseDetail({
 			.map((w) => String(w))
 			.filter(Boolean);
 		await applyToCourse(course.id, selected);
-		redirect('/student/applications');
+		redirect(`${origin}/student/applications`);
 	}
 
 	const slotOptions =

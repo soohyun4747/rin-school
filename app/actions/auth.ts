@@ -7,6 +7,9 @@ import { requireSession } from "@/lib/auth";
 
 export type PasswordUpdateState = { success?: boolean; error?: string };
 
+const origin =
+  typeof window !== "undefined" ? window.location.origin : "https://rinschool.com";
+
 export async function changePassword(prev: PasswordUpdateState, formData: FormData): Promise<PasswordUpdateState> {
   void prev;
   const { session, profile } = await requireSession();
@@ -65,11 +68,11 @@ export async function deleteAccount(prev: DeleteAccountState): Promise<DeleteAcc
 
   const supabase = await getSupabaseServerClient();
   await supabase.auth.signOut();
-  redirect("/");
+  redirect(`${origin}/`);
 }
 
 export async function logout() {
   const supabase = await getSupabaseServerClient();
   await supabase.auth.signOut();
-  redirect("/auth/login");
+  redirect(`${origin}/auth/login`);
 }

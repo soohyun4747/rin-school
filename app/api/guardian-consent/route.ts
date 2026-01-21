@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin';
 
+const origin =
+  typeof window !== "undefined" ? window.location.origin : "https://rinschool.com";
+
 export async function GET(request: Request) {
 	const supabase = getSupabaseServiceRoleClient();
 
@@ -10,7 +13,7 @@ export async function GET(request: Request) {
 
 	if (!userId || !token) {
 		const url = new URL(
-			'/guardian-consent/error?reason=missing',
+			`${origin}/guardian-consent/error?reason=missing`,
 			request.url
 		);
 		return NextResponse.redirect(url);
@@ -32,14 +35,14 @@ export async function GET(request: Request) {
 		}
 
 		const url = new URL(
-			'/guardian-consent/error?reason=invalid',
+			`${origin}/guardian-consent/error?reason=invalid`,
 			request.url
 		);
 		return NextResponse.redirect(url);
 	}
 
 	if (consent.guardian_status === 'confirmed') {
-		const url = new URL('/guardian-consent/already-confirmed', request.url);
+		const url = new URL(`${origin}/guardian-consent/already-confirmed`, request.url);
 		return NextResponse.redirect(url);
 	}
 
@@ -56,11 +59,11 @@ export async function GET(request: Request) {
 		console.error({ updateError });
 
 		const url = new URL(
-			'/guardian-consent/error?reason=update_failed',
+			`${origin}/guardian-consent/error?reason=update_failed`,
 			request.url
 		);
 		return NextResponse.redirect(url);
 	}
-	const url = new URL('/guardian-consent/success', request.url);
+	const url = new URL(`${origin}/guardian-consent/success`, request.url);
 	return NextResponse.redirect(url);
 }
