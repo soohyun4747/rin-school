@@ -47,6 +47,11 @@ export function CourseEditForm({ course, instructors, windows }: Props) {
                 course.image_url ? '현재 이미지를 유지합니다.' : '선택된 이미지가 없습니다.'
         );
         const [hasNewFile, setHasNewFile] = useState(false);
+	const subjectOptions = COURSE_CATEGORIES.includes(
+		course.subject as (typeof COURSE_CATEGORIES)[number]
+	)
+		? COURSE_CATEGORIES
+		: [course.subject, ...COURSE_CATEGORIES];
 
         useEffect(() => {
                 if (state?.success) {
@@ -122,20 +127,18 @@ export function CourseEditForm({ course, instructors, windows }: Props) {
 							<label className='text-sm font-medium text-slate-700'>
 								과목
 							</label>
-							<Input
+							<Select
 								name='subject'
-								list='course-subjects'
 								defaultValue={course.subject}
-								required
-							/>
-							<datalist id='course-subjects'>
-								{COURSE_CATEGORIES.map((category) => (
+								required>
+								{subjectOptions.map((category) => (
 									<option
 										key={category}
-										value={category}
-									/>
+										value={category}>
+										{category}
+									</option>
 								))}
-							</datalist>
+							</Select>
 						</div>
 						<div>
 							<label className='text-sm font-medium text-slate-700'>

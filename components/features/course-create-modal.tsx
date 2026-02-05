@@ -102,17 +102,16 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700">과목</label>
-                <Input
-                  name="subject"
-                  placeholder="수학"
-                  list="course-subjects"
-                  required
-                />
-                <datalist id="course-subjects">
+                <Select name="subject" defaultValue="" required>
+                  <option value="" disabled>
+                    과목을 선택해주세요
+                  </option>
                   {COURSE_CATEGORIES.map((category) => (
-                    <option key={category} value={category} />
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
                   ))}
-                </datalist>
+                </Select>
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700">학년 범위</label>
