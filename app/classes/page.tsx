@@ -1,28 +1,19 @@
-import Image from 'next/image';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import Link from 'next/link';
-
-type CourseCard = {
-	id: string;
-	title: string;
-        subject: string;
-        grade_range: string;
-        description: string | null;
-        image_url: string | null;
-        is_closed: boolean;
-};
-
-const fallbackCourseImage =
-	'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1200&q=80';
+import {
+	CourseCategoryCourseList,
+	type CourseCard,
+} from '@/components/features/course-category-course-list';
 
 export default async function ClassesPage() {
-        const supabase = await getSupabaseServerClient();
-        const { data: courses, error } = await supabase
-                .from('courses')
-                .select('id, title, subject, grade_range, description, image_url, is_closed')
-                .order('display_order', { ascending: false, nullsLast: true })
-                .order('created_at', { ascending: false })
-                .limit(12);
+	const supabase = await getSupabaseServerClient();
+	const { data: courses, error } = await supabase
+		.from('courses')
+		.select(
+			'id, title, subject, grade_range, description, image_url, is_closed'
+		)
+		.order('display_order', { ascending: false, nullsLast: true })
+		.order('created_at', { ascending: false })
+		.limit(12);
 
 	const courseList = courses ?? [];
 
@@ -56,76 +47,10 @@ export default async function ClassesPage() {
 					표시됩니다.
 				</div>
 			) : (
-				<div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
-                                        {courseList.map((course: CourseCard) => {
-                                                const card = (
-                                                        <article
-                                                                className='relative overflow-hidden rounded-2xl border border-[var(--primary-border)] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg'
-                                                                aria-label={course.title}>
-                                                                <div className='relative h-44 w-full bg-slate-100'>
-                                                                        <Image
-                                                                                src={
-                                                                                        course.image_url ||
-                                                                                        fallbackCourseImage
-                                                                                }
-                                                                                alt={`${course.title} 이미지`}
-                                                                                fill
-                                                                                className={
-                                                                                        course.is_closed
-                                                                                                ? 'object-cover brightness-75'
-                                                                                                : 'object-cover'
-                                                                                }
-                                                                                sizes='(min-width: 1024px) 320px, (min-width: 768px) 45vw, 90vw'
-                                                                        />
-                                                                        {course.is_closed && (
-                                                                                <span className='absolute left-3 top-3 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 shadow-sm'>
-                                                                                        신청 마감
-                                                                                </span>
-                                                                        )}
-                                                                </div>
-
-                                                                <div className='space-y-2 p-4'>
-                                                                        <div className='flex items-center justify-between text-xs uppercase tracking-wide text-slate-500'>
-                                                                                <span>{course.subject}</span>
-                                                                                <span className='rounded-full bg-[var(--primary-soft)] px-2 py-1 text-[var(--primary)]'>
-                                                                                        {course.grade_range}
-                                                                                </span>
-                                                                        </div>
-
-                                                                        <h2 className='text-lg font-semibold text-slate-900'>
-                                                                                {course.title}
-                                                                        </h2>
-
-                                                                        <p className='line-clamp-2 text-sm text-slate-600'>
-                                                                                {course.description ||
-                                                                                        '간단한 소개가 준비 중입니다.'}
-                                                                        </p>
-                                                                </div>
-                                                        </article>
-                                                );
-
-                                                if (course.is_closed) {
-                                                        return (
-                                                                <div
-                                                                        key={course.id}
-                                                                        className='cursor-not-allowed'
-                                                                        aria-disabled>
-                                                                        {card}
-                                                                </div>
-                                                        );
-                                                }
-
-                                                return (
-                                                        <Link
-                                                                key={course.id}
-                                                                href={`/classes/${course.id}`}
-                                                                className='block'>
-                                                                {card}
-                                                        </Link>
-                                                );
-                                        })}
-                                </div>
-                        )}
-                </div>
+				<CourseCategoryCourseList
+					courses={courseList as CourseCard[]}
+				/>
+			)}
+		</div>
 	);
 }

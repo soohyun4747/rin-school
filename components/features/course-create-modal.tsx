@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { CourseScheduleFields } from "./course-schedule-fields";
+import { COURSE_CATEGORIES } from "@/lib/course-categories";
 
 type InstructorOption = { id: string; name: string | null; email: string | null };
 
@@ -101,7 +102,17 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700">과목</label>
-                <Input name="subject" placeholder="수학" required />
+                <Input
+                  name="subject"
+                  placeholder="수학"
+                  list="course-subjects"
+                  required
+                />
+                <datalist id="course-subjects">
+                  {COURSE_CATEGORIES.map((category) => (
+                    <option key={category} value={category} />
+                  ))}
+                </datalist>
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700">학년 범위</label>

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { COURSE_CATEGORIES } from '@/lib/course-categories';
 import type { EditableTimeWindow, InstructorOption } from './course-form-types';
 import { CourseScheduleFields } from './course-schedule-fields';
 
@@ -123,9 +124,18 @@ export function CourseEditForm({ course, instructors, windows }: Props) {
 							</label>
 							<Input
 								name='subject'
+								list='course-subjects'
 								defaultValue={course.subject}
 								required
 							/>
+							<datalist id='course-subjects'>
+								{COURSE_CATEGORIES.map((category) => (
+									<option
+										key={category}
+										value={category}
+									/>
+								))}
+							</datalist>
 						</div>
 						<div>
 							<label className='text-sm font-medium text-slate-700'>

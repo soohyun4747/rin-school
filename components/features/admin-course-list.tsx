@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
         deleteCourse,
@@ -11,6 +11,11 @@ import {
 import type { ICourse } from '@/app/(dashboard)/admin/courses/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+	COURSE_CATEGORY_TABS,
+	normalizeCourseCategory,
+	type CourseCategoryTab,
+} from '@/lib/course-categories';
 import { cn } from '@/lib/utils';
 
 type CourseListProps = {
@@ -48,12 +53,34 @@ export function AdminCourseList({ courses }: CourseListProps) {
         const [isPending, startTransition] = useTransition();
 
         const courseCount = currentCourses.length;
+        const [activeTab, setActiveTab] = useState<CourseCategoryTab>('전체');
 
         useEffect(() => {
                 setCurrentCourses(courses);
                 initialOrderRef.current = courses.map((course) => course.id);
                 setHasChanges(false);
         }, [courses]);
+
+	const categoryCounts = useMemo(() => {
+		const counts = new Map<CourseCategoryTab, number>();
+		COURSE_CATEGORY_TABS.forEach((tab) => counts.set(tab, 0));
+		counts.set('전체', currentCourses.length);
+		currentCourses.forEach((course) => {
+			const category = normalizeCourseCategory(course.subject);
+			counts.set(category, (counts.get(category) ?? 0) + 1);
+		});
+		return counts;
+	}, [currentCourses]);
+
+	const filteredCourses = useMemo(() => {
+		if (activeTab === '전체') return currentCourses;
+		return currentCourses.filter(
+			(course) => normalizeCourseCategory(course.subject) === activeTab
+		);
+	}, [activeTab, currentCourses]);
+
+	const displayCount =
+		activeTab === '전체' ? courseCount : filteredCourses.length;
 
 	const updateOrderState = (updater: (prev: ICourse[]) => ICourse[]) => {
 		setCurrentCourses((prev) => {
@@ -187,6 +214,26 @@ export function AdminCourseList({ courses }: CourseListProps) {
 
 	return (
 		<div className='space-y-3'>
+			<div className='flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-2'>
+				{COURSE_CATEGORY_TABS.map((tab) => (
+					<button
+						key={tab}
+						type='button'
+						onClick={() => setActiveTab(tab)}
+						className={cn(
+							'rounded-full px-4 py-2 text-xs font-semibold transition',
+							activeTab === tab
+								? 'bg-[var(--primary)] text-white shadow-sm'
+								: 'text-slate-600 hover:bg-slate-50'
+						)}>
+						{tab}{' '}
+						<span className='ml-1 text-[0.65rem] font-semibold text-slate-400'>
+							{categoryCounts.get(tab) ?? 0}
+						</span>
+					</button>
+				))}
+			</div>
+
 			<div className='flex flex-wrap items-center gap-2 text-sm text-slate-600'>
 				<span>카드를 드래그하여 순서를 조정한 뒤 저장하세요.</span>
 				<div className='ml-auto flex items-center gap-2'>
@@ -211,8 +258,13 @@ export function AdminCourseList({ courses }: CourseListProps) {
 				</div>
 			</div>
 
+			{filteredCourses.length === 0 ? (
+				<p className='text-sm text-slate-600'>
+					선택한 종류에 해당하는 수업이 없습니다.
+				</p>
+			) : (
 			<div className='grid gap-3 md:grid-cols-2'>
-				{currentCourses.map((course, index) => (
+				{filteredCourses.map((course, index) => (
 					<div
 						key={course.id}
 						draggable={false}
@@ -243,7 +295,7 @@ export function AdminCourseList({ courses }: CourseListProps) {
 								</svg>
 							</button>
 							<span className='text-xs text-slate-500'>
-								현재 {index + 1} / {courseCount}
+								현재 {index + 1} / {displayCount}
 							</span>
 							<div className='ml-auto flex gap-1 md:hidden'>
 								<Button
@@ -365,6 +417,7 @@ export function AdminCourseList({ courses }: CourseListProps) {
 					</div>
 				))}
 			</div>
+			)}
 		</div>
 	);
 }
