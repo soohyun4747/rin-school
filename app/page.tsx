@@ -1,43 +1,75 @@
 import Image from "next/image";
 import Link from "next/link";
-import { fetchLatestLandingImage } from "@/lib/landing";
+import { fetchLandingImages } from "@/lib/landing";
 
 export default async function HomePage() {
-  const [desktopImage, mobileImage] = await Promise.all([
-    fetchLatestLandingImage("desktop"),
-    fetchLatestLandingImage("mobile"),
+  const [desktopImages, mobileImages] = await Promise.all([
+    fetchLandingImages("desktop"),
+    fetchLandingImages("mobile"),
   ]);
 
-  const desktopSrc = desktopImage?.publicUrl ?? mobileImage?.publicUrl;
-  const mobileSrc = mobileImage?.publicUrl ?? desktopImage?.publicUrl;
+  const desktopDisplayImages = desktopImages.length > 0 ? desktopImages : mobileImages;
+  const mobileDisplayImages = mobileImages.length > 0 ? mobileImages : desktopImages;
 
   return (
     <div>
-      {mobileSrc && (
-        <Image
-          src={mobileSrc}
-          alt="린스쿨 랜딩 이미지 (모바일)"
-          width={1080}
-          height={1920}
-          sizes="100vw"
-          className="h-auto w-full md:hidden"
-          priority
-        />
+      {mobileDisplayImages.length > 0 && (
+        <div className="md:hidden">
+          {mobileDisplayImages.map((image, index) => {
+            const content = (
+              <Image
+                src={image.publicUrl}
+                alt={`린스쿨 랜딩 이미지 (모바일) ${index + 1}`}
+                width={1080}
+                height={1920}
+                sizes="100vw"
+                className="h-auto w-full"
+                priority={index === 0}
+              />
+            );
+
+            if (!image.linkUrl) {
+              return <div key={image.path}>{content}</div>;
+            }
+
+            return (
+              <a key={image.path} href={image.linkUrl} target="_blank" rel="noreferrer noopener" className="block">
+                {content}
+              </a>
+            );
+          })}
+        </div>
       )}
 
-      {desktopSrc && (
-        <Image
-          src={desktopSrc}
-          alt="린스쿨 랜딩 이미지"
-          width={1920}
-          height={1080}
-          sizes="100vw"
-          className="hidden h-auto w-full md:block"
-          priority
-        />
+      {desktopDisplayImages.length > 0 && (
+        <div className="hidden md:block">
+          {desktopDisplayImages.map((image, index) => {
+            const content = (
+              <Image
+                src={image.publicUrl}
+                alt={`린스쿨 랜딩 이미지 ${index + 1}`}
+                width={1920}
+                height={1080}
+                sizes="100vw"
+                className="h-auto w-full"
+                priority={index === 0}
+              />
+            );
+
+            if (!image.linkUrl) {
+              return <div key={image.path}>{content}</div>;
+            }
+
+            return (
+              <a key={image.path} href={image.linkUrl} target="_blank" rel="noreferrer noopener" className="block">
+                {content}
+              </a>
+            );
+          })}
+        </div>
       )}
 
-      {!desktopSrc && !mobileSrc && (
+      {desktopDisplayImages.length === 0 && mobileDisplayImages.length === 0 && (
         <div className="flex h-64 items-center justify-center bg-slate-100 text-sm text-slate-600 md:h-96">
           노출할 랜딩 이미지를 업로드해주세요.
         </div>
