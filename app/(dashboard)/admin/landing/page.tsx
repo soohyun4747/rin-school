@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { uploadLandingImage } from "@/app/actions/landing";
+import { deleteLandingImageByForm, uploadLandingImage } from "@/app/actions/landing";
+import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { fetchLandingImages } from "@/lib/landing";
 
 export default async function LandingAdminPage() {
@@ -34,7 +35,14 @@ export default async function LandingAdminPage() {
                       sizes="(min-width: 1024px) 720px, 100vw"
                     />
                   </div>
-                  <p className="text-xs text-slate-600 break-all">링크: {image.linkUrl ?? "설정 안 함"}</p>
+                  <p className="text-xs break-all text-slate-600">링크: {image.linkUrl ?? "설정 안 함"}</p>
+                  <form action={deleteLandingImageByForm}>
+                    <input type="hidden" name="variant" value="desktop" />
+                    <input type="hidden" name="path" value={image.path} />
+                    <ConfirmSubmitButton message="이 랜딩 이미지를 삭제하시겠습니까?" variant="danger" size="sm">
+                      이미지 삭제
+                    </ConfirmSubmitButton>
+                  </form>
                 </div>
               ))}
             </div>
@@ -59,7 +67,14 @@ export default async function LandingAdminPage() {
                       sizes="(min-width: 1024px) 720px, 100vw"
                     />
                   </div>
-                  <p className="text-xs text-slate-600 break-all">링크: {image.linkUrl ?? "설정 안 함"}</p>
+                  <p className="text-xs break-all text-slate-600">링크: {image.linkUrl ?? "설정 안 함"}</p>
+                  <form action={deleteLandingImageByForm}>
+                    <input type="hidden" name="variant" value="mobile" />
+                    <input type="hidden" name="path" value={image.path} />
+                    <ConfirmSubmitButton message="이 랜딩 이미지를 삭제하시겠습니까?" variant="danger" size="sm">
+                      이미지 삭제
+                    </ConfirmSubmitButton>
+                  </form>
                 </div>
               ))}
             </div>

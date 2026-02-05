@@ -137,3 +137,15 @@ export async function deleteLandingImage(path: string, variant: LandingVariant) 
   revalidatePath("/");
   revalidatePath("/admin/landing");
 }
+
+export async function deleteLandingImageByForm(formData: FormData) {
+  const path = formData.get("path");
+  const variant = formData.get("variant");
+
+  if (typeof path !== "string" || !path) {
+    throw new Error("삭제할 이미지 경로가 올바르지 않습니다.");
+  }
+
+  const landingVariant: LandingVariant = variant === "mobile" ? "mobile" : "desktop";
+  await deleteLandingImage(path, landingVariant);
+}
