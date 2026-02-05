@@ -8,6 +8,7 @@ export default async function LandingAdminPage() {
     fetchLandingImages("desktop"),
     fetchLandingImages("mobile"),
   ]);
+  
 
   return (
     <div className="space-y-6">
