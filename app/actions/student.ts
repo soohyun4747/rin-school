@@ -74,9 +74,7 @@ export async function applyToCourse(
                 if (normalizedCustomTimes.length === 0) {
                         throw new Error('선택한 시간이 유효하지 않습니다.');
                 }
-        } else if (rawSelections.length === 0) {
-		throw new Error('최소 1개 이상의 시간을 선택해주세요.');
-	}
+        }
 
 	const { data: existing } = await supabase
 		.from('applications')
@@ -180,7 +178,8 @@ export async function applyToCourse(
 					'선택한 시간 저장에 실패했습니다. 다시 시도해주세요.'
 				);
 			}
-		} else if (normalizedCustomTimes.length > 0) {
+		}
+		if (normalizedCustomTimes.length > 0) {
 			const invalid = normalizedCustomTimes.some((time) => {
 				if (Number.isNaN(time.day_of_week)) return true;
 				if (time.day_of_week < 0 || time.day_of_week > 6) return true;

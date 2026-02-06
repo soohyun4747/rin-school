@@ -67,14 +67,13 @@ export function CourseApplicationForm({ slotGroups, hasActiveApplication, action
     });
   };
 
-  const showCustomSlots = totalSlots === 0;
   const hasCustomSelection = customSlots.some(
     (slot) => slot.start_time && slot.end_time
   );
 
   const isSubmitDisabled =
     hasActiveApplication ||
-    (showCustomSlots ? !hasCustomSelection : selectedValues.size === 0);
+    (!hasCustomSelection && selectedValues.size === 0);
 
   return (
     <form action={action} className="space-y-4">
@@ -121,11 +120,15 @@ export function CourseApplicationForm({ slotGroups, hasActiveApplication, action
             </div>
           </div>
         ))}
-        {showCustomSlots && (
-          <div className="space-y-3 rounded-lg border border-slate-200 p-3">
-            <p className="text-sm font-semibold text-slate-800">
-              내가 가능한 시간 입력
+        <div className="space-y-3 rounded-lg border border-slate-200 p-3">
+          <p className="text-sm font-semibold text-slate-800">
+            내가 가능한 시간 입력
+          </p>
+          {totalSlots > 0 && (
+            <p className="text-xs text-slate-600">
+              등록된 시간이 있어도 원하는 시간대를 추가로 신청할 수 있습니다.
             </p>
+          )}
             <div className="space-y-3">
               {customSlots.map((slot, index) => (
                 <div
@@ -216,7 +219,6 @@ export function CourseApplicationForm({ slotGroups, hasActiveApplication, action
               시간 추가
             </Button>
           </div>
-        )}
         <p className="text-xs text-slate-600">선택한 시간 기준으로 신청이 접수됩니다.</p>
       </div>
       <SubmitButton disabled={isSubmitDisabled} hasActiveApplication={hasActiveApplication} />
