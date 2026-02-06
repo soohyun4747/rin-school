@@ -205,6 +205,25 @@ export interface Database {
         };
         Update: Partial<Omit<Database["public"]["Tables"]["application_time_choices"]["Row"], "id" | "application_id" | "window_id">>;
       };
+      application_time_requests: {
+        Row: {
+          id: string;
+          application_id: string;
+          day_of_week: number;
+          start_time: string;
+          end_time: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          application_id: string;
+          day_of_week: number;
+          start_time: string;
+          end_time: string;
+          created_at?: string;
+        };
+        Update: Partial<Omit<Database["public"]["Tables"]["application_time_requests"]["Row"], "id" | "application_id">>;
+      };
       match_students: {
         Row: {
           id: string;
