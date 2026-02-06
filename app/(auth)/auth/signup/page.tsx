@@ -20,7 +20,9 @@ const studentCourseOptions = [
 ];
 
 const origin =
-  typeof window !== "undefined" ? window.location.origin : "https://rinschool.com";
+	typeof window !== 'undefined'
+		? window.location.origin
+		: 'https://rinschool.com';
 
 const TERMS_TEXT = `제1조 목적
 
@@ -242,7 +244,9 @@ export default function SignupPage() {
 							country: country || null,
 							guardian_name: trimmedGuardianName || null,
 							student_course:
-								role === 'student' ? trimmedStudentCourse : null,
+								role === 'student'
+									? trimmedStudentCourse
+									: null,
 							age_confirmed: ageConfirmed,
 							guardian_email: ageConfirmed
 								? null
@@ -305,6 +309,23 @@ export default function SignupPage() {
 						className='space-y-3'>
 						<div>
 							<label className='text-sm font-medium text-slate-700'>
+								역할
+							</label>
+							<select
+								value={role}
+								onChange={(e) => setRole(e.target.value)}
+								className='w-full rounded-md border border-slate-200 px-3 py-2'>
+								{roles.map((r) => (
+									<option
+										key={r.value}
+										value={r.value}>
+										{r.label}
+									</option>
+								))}
+							</select>
+						</div>
+						<div>
+							<label className='text-sm font-medium text-slate-700'>
 								아이디
 							</label>
 							<Input
@@ -361,19 +382,21 @@ export default function SignupPage() {
 								required
 							/>
 						</div>
-						<div className='space-y-1'>
-							<label className='text-sm font-medium text-slate-700'>
-								보호자 이름 (선택)
-							</label>
-							<Input
-								type='text'
-								value={guardianName}
-								onChange={(e) =>
-									setGuardianName(e.target.value)
-								}
-								placeholder='홍길동'
-							/>
-						</div>
+						{role === 'student' && (
+							<div className='space-y-1'>
+								<label className='text-sm font-medium text-slate-700'>
+									보호자 이름 (선택)
+								</label>
+								<Input
+									type='text'
+									value={guardianName}
+									onChange={(e) =>
+										setGuardianName(e.target.value)
+									}
+									placeholder='홍길동'
+								/>
+							</div>
+						)}
 						<div>
 							<label className='text-sm font-medium text-slate-700'>
 								연락처
@@ -419,45 +442,28 @@ export default function SignupPage() {
 								required
 							/>
 						</div>
-						<div>
-							<label className='text-sm font-medium text-slate-700'>
-								역할
-							</label>
-							<select
-								value={role}
-								onChange={(e) => setRole(e.target.value)}
-								className='w-full rounded-md border border-slate-200 px-3 py-2'>
-								{roles.map((r) => (
-									<option
-										key={r.value}
-										value={r.value}>
-									{r.label}
-								</option>
-							))}
-						</select>
-					</div>
-					{role === 'student' && (
-						<div>
-							<label className='text-sm font-medium text-slate-700'>
-								재학코스
-							</label>
-							<select
-								value={studentCourse}
-								onChange={(e) =>
-									setStudentCourse(e.target.value)
-								}
-								className='w-full rounded-md border border-slate-200 px-3 py-2'
-								required>
-								{studentCourseOptions.map((option) => (
-									<option
-										key={option.value}
-										value={option.value}>
-										{option.label}
-									</option>
-								))}
-							</select>
-						</div>
-					)}
+						{role === 'student' && (
+							<div>
+								<label className='text-sm font-medium text-slate-700'>
+									재학코스
+								</label>
+								<select
+									value={studentCourse}
+									onChange={(e) =>
+										setStudentCourse(e.target.value)
+									}
+									className='w-full rounded-md border border-slate-200 px-3 py-2'
+									required>
+									{studentCourseOptions.map((option) => (
+										<option
+											key={option.value}
+											value={option.value}>
+											{option.label}
+										</option>
+									))}
+								</select>
+							</div>
+						)}
 						<div className='space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3'>
 							<div className='flex items-center justify-between'>
 								<p className='text-sm font-semibold text-slate-800'>
