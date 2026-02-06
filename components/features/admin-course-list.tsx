@@ -52,8 +52,16 @@ export function AdminCourseList({ courses }: CourseListProps) {
         const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null);
         const [isPending, startTransition] = useTransition();
 
-        const courseCount = currentCourses.length;
-        const [activeTab, setActiveTab] = useState<CourseCategoryTab>('전체');
+        const categoryTabs = useMemo(
+                () =>
+                        COURSE_CATEGORY_TABS.filter(
+                                (tab): tab is Exclude<CourseCategoryTab, '전체'> => tab !== '전체'
+                        ),
+                []
+        );
+        const [activeTab, setActiveTab] = useState<Exclude<CourseCategoryTab, '전체'>>(
+                categoryTabs[0] ?? '수학'
+        );
 
         useEffect(() => {
                 setCurrentCourses(courses);
@@ -64,7 +72,6 @@ export function AdminCourseList({ courses }: CourseListProps) {
 	const categoryCounts = useMemo(() => {
 		const counts = new Map<CourseCategoryTab, number>();
 		COURSE_CATEGORY_TABS.forEach((tab) => counts.set(tab, 0));
-		counts.set('전체', currentCourses.length);
 		currentCourses.forEach((course) => {
 			const category = normalizeCourseCategory(course.subject);
 			counts.set(category, (counts.get(category) ?? 0) + 1);
@@ -73,14 +80,12 @@ export function AdminCourseList({ courses }: CourseListProps) {
 	}, [currentCourses]);
 
 	const filteredCourses = useMemo(() => {
-		if (activeTab === '전체') return currentCourses;
 		return currentCourses.filter(
 			(course) => normalizeCourseCategory(course.subject) === activeTab
 		);
 	}, [activeTab, currentCourses]);
 
-	const displayCount =
-		activeTab === '전체' ? courseCount : filteredCourses.length;
+	const displayCount = filteredCourses.length;
 
 	const updateOrderState = (updater: (prev: ICourse[]) => ICourse[]) => {
 		setCurrentCourses((prev) => {
@@ -215,7 +220,7 @@ export function AdminCourseList({ courses }: CourseListProps) {
 	return (
 		<div className='space-y-3'>
 			<div className='flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-2'>
-				{COURSE_CATEGORY_TABS.map((tab) => (
+				{categoryTabs.map((tab) => (
 					<button
 						key={tab}
 						type='button'
