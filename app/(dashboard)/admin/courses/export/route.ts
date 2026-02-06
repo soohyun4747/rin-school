@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { COURSE_CATEGORIES, normalizeCourseCategory, type CourseCategory } from '@/lib/course-categories';
 
 type CourseRow = {
 	id: string;
@@ -64,25 +65,6 @@ function sanitizeSheetName(name: string) {
 	const cleaned = name.replace(/[\\/:*?\[\]]/g, ' ').trim();
 	if (!cleaned) return '과목';
 	return cleaned.slice(0, 31);
-}
-
-function getUniqueSheetName(name: string, usedNames: Set<string>) {
-	if (!usedNames.has(name)) {
-		usedNames.add(name);
-		return name;
-	}
-
-	let index = 2;
-	while (true) {
-		const suffix = ` (${index})`;
-		const base = name.slice(0, Math.max(0, 31 - suffix.length));
-		const candidate = `${base}${suffix}`;
-		if (!usedNames.has(candidate)) {
-			usedNames.add(candidate);
-			return candidate;
-		}
-		index += 1;
-	}
 }
 
 function formatDate(value: string) {
@@ -209,24 +191,23 @@ export async function GET() {
 		enrolledCourseMap.set(application.student_id, enrolled);
 	});
 
-	const applicationsBySubject = new Map<string, { course: CourseRow; app: ApplicationRow }[]>();
-	courses.forEach((course) => {
-		if (!applicationsBySubject.has(course.subject)) {
-			applicationsBySubject.set(course.subject, []);
-		}
+	const applicationsByCategory = new Map<CourseCategory, { course: CourseRow; app: ApplicationRow }[]>();
+	COURSE_CATEGORIES.forEach((category) => {
+		applicationsByCategory.set(category, []);
 	});
 	applications.forEach((application) => {
 		const course = courseMap.get(application.course_id);
 		if (!course) return;
-		const list = applicationsBySubject.get(course.subject) ?? [];
+		const category = normalizeCourseCategory(course.subject);
+		const list = applicationsByCategory.get(category) ?? [];
 		list.push({ course, app: application });
-		applicationsBySubject.set(course.subject, list);
+		applicationsByCategory.set(category, list);
 	});
 
-	const usedSheetNames = new Set<string>();
-	const worksheetXml = [...applicationsBySubject.entries()]
-		.map(([subject, rows]) => {
-			const sheetName = getUniqueSheetName(sanitizeSheetName(subject), usedSheetNames);
+	const worksheetXml = COURSE_CATEGORIES
+		.map((category) => {
+			const rows = applicationsByCategory.get(category) ?? [];
+			const sheetName = sanitizeSheetName(category);
 			const xmlRows = [
 				`<Row>${EXCEL_HEADERS.map((header) => excelCell(header)).join('')}</Row>`,
 				...rows.map(({ course, app }) => {
