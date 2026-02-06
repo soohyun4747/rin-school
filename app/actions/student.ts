@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireSession, requireRole } from '@/lib/auth';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { splitWindowByDuration, toHHMM } from '@/lib/time';
+import { toHHMM } from '@/lib/time';
 import { sendEmail } from '@/lib/email';
 import { getAdminNotificationEmails } from '@/lib/notifications';
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin';
@@ -36,15 +36,7 @@ export async function applyToCourse(
 			start_time: toHHMM(time.start_time),
 			end_time: toHHMM(time.end_time),
 		}));
-	const uniqueCustomTimes = Array.from(
-		new Map(
-			normalizedCustomTimes.map((time) => [
-				`${time.day_of_week}|${time.start_time}|${time.end_time}`,
-				time,
-			])
-		).values()
-	);
-	if (rawSelections.length === 0 && uniqueCustomTimes.length === 0) {
+	if (rawSelections.length === 0 && normalizedCustomTimes.length === 0) {
 		throw new Error('최소 1개 이상의 시간을 선택해주세요.');
 	}
 
@@ -79,10 +71,12 @@ export async function applyToCourse(
         }
 
         if (!windows || windows.length === 0) {
-                if (uniqueCustomTimes.length === 0) {
+                if (normalizedCustomTimes.length === 0) {
                         throw new Error('선택한 시간이 유효하지 않습니다.');
                 }
-        }
+        } else if (rawSelections.length === 0) {
+		throw new Error('최소 1개 이상의 시간을 선택해주세요.');
+	}
 
 	const { data: existing } = await supabase
 		.from('applications')
@@ -100,25 +94,6 @@ export async function applyToCourse(
 	const windowMap = new Map((windows ?? []).map((w) => [w.id, w]));
 	const finalWindowIds: string[] = [];
 	const selectableSlotKeys = new Set<string>();
-
-	(windows ?? []).forEach((window) => {
-		try {
-			const splitSlots = splitWindowByDuration(window, course.duration_minutes);
-			splitSlots.forEach((slot) => {
-				selectableSlotKeys.add(
-					`${slot.day_of_week}|${toHHMM(slot.start_time)}|${toHHMM(
-						slot.end_time
-					)}`
-				);
-			});
-		} catch {
-			selectableSlotKeys.add(
-				`${window.day_of_week}|${toHHMM(window.start_time)}|${toHHMM(
-					window.end_time
-				)}`
-			);
-		}
-	});
 
 	if (windows && windows.length > 0) {
 		for (const selection of parsedSelections) {
@@ -205,9 +180,8 @@ export async function applyToCourse(
 					'선택한 시간 저장에 실패했습니다. 다시 시도해주세요.'
 				);
 			}
-		}
-		if (uniqueCustomTimes.length > 0) {
-			const invalid = uniqueCustomTimes.some((time) => {
+		} else if (normalizedCustomTimes.length > 0) {
+			const invalid = normalizedCustomTimes.some((time) => {
 				if (Number.isNaN(time.day_of_week)) return true;
 				if (time.day_of_week < 0 || time.day_of_week > 6) return true;
 				const startMinutes = minutesFromTimeString(time.start_time);
@@ -222,18 +196,7 @@ export async function applyToCourse(
 				throw new Error('선택한 시간이 유효하지 않습니다.');
 			}
 
-			const hasExistingOptionSelection = uniqueCustomTimes.some((time) =>
-				selectableSlotKeys.has(
-					`${time.day_of_week}|${time.start_time}|${time.end_time}`
-				)
-			);
-			if (hasExistingOptionSelection) {
-				throw new Error(
-					'이미 선택 가능한 시간대는 직접 신청할 수 없습니다. 기존 옵션에서 선택해주세요.'
-				);
-			}
-
-			const requestRows = uniqueCustomTimes.map((time) => ({
+			const requestRows = normalizedCustomTimes.map((time) => ({
 				application_id: applicationId,
 				day_of_week: time.day_of_week,
 				start_time: time.start_time,
