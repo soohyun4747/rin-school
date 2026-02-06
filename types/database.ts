@@ -21,6 +21,7 @@ export interface Database {
           kakao_id: string | null;
           country: string | null;
           guardian_name: string | null;
+          student_course: "international_school" | "local_school" | "homeschool" | null;
           created_at: string;
         };
         Insert: {
@@ -34,6 +35,7 @@ export interface Database {
           kakao_id?: string | null;
           country?: string | null;
           guardian_name?: string | null;
+          student_course?: "international_school" | "local_school" | "homeschool" | null;
           created_at?: string;
         };
         Update: {
@@ -46,6 +48,7 @@ export interface Database {
           kakao_id?: string | null;
           country?: string | null;
           guardian_name?: string | null;
+          student_course?: "international_school" | "local_school" | "homeschool" | null;
           created_at?: string;
         };
       };
