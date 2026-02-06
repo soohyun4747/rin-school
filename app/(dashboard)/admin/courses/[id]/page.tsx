@@ -453,7 +453,7 @@ export default async function AdminCourseDetailPage({
 						</p>
 					)}
 					{applicationRows.length > 0 && (
-						<div className='overflow-hidden rounded-lg border border-slate-200'>
+						<div className='overflow-auto rounded-lg border border-slate-200'>
 							<table className='min-w-full divide-y divide-slate-200 text-sm'>
 								<thead className='bg-slate-50'>
 									<tr>
@@ -517,7 +517,7 @@ export default async function AdminCourseDetailPage({
 														app.student_id
 													)?.birthdate ?? '미입력'}
 												</td>
-												<td className='px-4 py-2 text-slate-700'>
+												<td className='px-4 py-2 text-slate-700 md:max-w-[400px]'>
 													{selections.length === 0
 														? '선택 없음'
 														: selections

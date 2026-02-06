@@ -29,3 +29,7 @@ body {
   color: #0f172a;
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 }
+
+td {
+  min-width: max-content;
+}

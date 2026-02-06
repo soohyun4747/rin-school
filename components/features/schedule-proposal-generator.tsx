@@ -11,11 +11,7 @@ import {
 } from '@/app/actions/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDateTime, formatDayTime } from '@/lib/time';
 import type { InstructorOption } from './course-form-types';
 
@@ -99,11 +95,11 @@ export default function ScheduleProposalGenerator({
 	const router = useRouter();
 	const profileMap = useMemo(
 		() => new Map(profiles.map((p) => [p.id, p])),
-		[profiles]
+		[profiles],
 	);
 	const instructorMap = useMemo(
 		() => new Map(instructors.map((inst) => [inst.id, inst])),
-		[instructors]
+		[instructors],
 	);
 	const applicationByStudent = useMemo(() => {
 		const map = new Map<string, ApplicationRow>();
@@ -116,7 +112,7 @@ export default function ScheduleProposalGenerator({
 	}, [applications]);
 	const windowMap = useMemo(
 		() => new Map(windows.map((w) => [w.id, w])),
-		[windows]
+		[windows],
 	);
 
 	const [result, setResult] = useState<ScheduleProposalResult>({
@@ -164,13 +160,13 @@ export default function ScheduleProposalGenerator({
 				new Set(
 					applications
 						.filter((app) => app.status === 'pending')
-						.map((app) => app.student_id)
-				)
+						.map((app) => app.student_id),
+				),
 			).map((id) => ({
 				id,
 				name: profileMap.get(id)?.name ?? id,
 			})),
-		[applications, profileMap]
+		[applications, profileMap],
 	);
 
 	const setProposals = (proposals: ScheduleProposal[]) => {
@@ -242,7 +238,7 @@ export default function ScheduleProposalGenerator({
 	const handleTimeChange = (
 		key: string,
 		type: 'start' | 'end',
-		value: string
+		value: string,
 	) => {
 		setEditableProposals((prev) =>
 			prev.map((proposal) => {
@@ -253,8 +249,11 @@ export default function ScheduleProposalGenerator({
 						slotStart: applyTime(proposal.slotStart, value),
 					};
 				}
-				return { ...proposal, slotEnd: applyTime(proposal.slotEnd, value) };
-			})
+				return {
+					...proposal,
+					slotEnd: applyTime(proposal.slotEnd, value),
+				};
+			}),
 		);
 	};
 
@@ -268,9 +267,9 @@ export default function ScheduleProposalGenerator({
 							instructor_name: instructorId
 								? null
 								: proposal.instructor_name,
-					  }
-					: proposal
-			)
+						}
+					: proposal,
+			),
 		);
 	};
 
@@ -282,9 +281,9 @@ export default function ScheduleProposalGenerator({
 							...proposal,
 							instructor_name: name,
 							instructor_id: name ? null : proposal.instructor_id,
-					  }
-					: proposal
-			)
+						}
+					: proposal,
+			),
 		);
 	};
 
@@ -295,11 +294,11 @@ export default function ScheduleProposalGenerator({
 					? {
 							...proposal,
 							studentIds: proposal.studentIds.filter(
-								(id) => id !== studentId
+								(id) => id !== studentId,
 							),
-					  }
-					: proposal
-			)
+						}
+					: proposal,
+			),
 		);
 	};
 
@@ -311,7 +310,7 @@ export default function ScheduleProposalGenerator({
 		}
 
 		const alreadyInOtherProposal = editableProposals.some(
-			(p) => p.key !== key && p.studentIds.includes(studentId)
+			(p) => p.key !== key && p.studentIds.includes(studentId),
 		);
 		if (alreadyInOtherProposal) {
 			setError('학생은 한 일정에만 배정할 수 있습니다.');
@@ -334,7 +333,7 @@ export default function ScheduleProposalGenerator({
 					...proposal,
 					studentIds: [...proposal.studentIds, studentId],
 				};
-			})
+			}),
 		);
 		setError(null);
 	};
@@ -349,15 +348,17 @@ export default function ScheduleProposalGenerator({
 						확정할 수 있습니다.
 					</p>
 				</div>
-				<Button onClick={handleGenerate} disabled={isGenerating}>
+				<Button
+					onClick={handleGenerate}
+					disabled={isGenerating}>
 					{isGenerating ? '생성 중...' : '생성하기'}
 				</Button>
 			</CardHeader>
 			<CardContent className='space-y-4 text-sm'>
 				{result.generated_at && (
 					<p className='text-xs text-slate-500'>
-						{formatDateTime(new Date(result.generated_at))}에
-						생성된 추천안
+						{formatDateTime(new Date(result.generated_at))}에 생성된
+						추천안
 					</p>
 				)}
 				{error && (
@@ -378,15 +379,15 @@ export default function ScheduleProposalGenerator({
 					const instructorText = proposal.instructor_id
 						? (instructorMap.get(proposal.instructor_id)?.name ??
 							proposal.instructor_id)
-						: proposal.instructor_name ?? '미지정';
+						: (proposal.instructor_name ?? '미지정');
 					const availableOptions = studentOptions.filter(
 						(option) =>
 							!proposal.studentIds.includes(option.id) &&
 							!editableProposals.some(
 								(p) =>
 									p.key !== proposal.key &&
-									p.studentIds.includes(option.id)
-							)
+									p.studentIds.includes(option.id),
+							),
 					);
 					return (
 						<div
@@ -399,8 +400,7 @@ export default function ScheduleProposalGenerator({
 										{formatDayTime(proposal.slotEnd)}
 									</p>
 									<p className='text-xs text-slate-600'>
-										강사:{' '}
-										{instructorText}
+										강사: {instructorText}
 									</p>
 								</div>
 								<Badge variant='warning'>제안됨</Badge>
@@ -415,7 +415,7 @@ export default function ScheduleProposalGenerator({
 											handleTimeChange(
 												proposal.key,
 												'start',
-												e.target.value
+												e.target.value,
 											)
 										}
 										className='w-full rounded-md border border-slate-200 px-2 py-1 text-sm'
@@ -430,51 +430,54 @@ export default function ScheduleProposalGenerator({
 											handleTimeChange(
 												proposal.key,
 												'end',
-												e.target.value
+												e.target.value,
 											)
 										}
 										className='w-full rounded-md border border-slate-200 px-2 py-1 text-sm'
 									/>
 								</label>
 							</div>
-							<div className='grid gap-3 sm:grid-cols-2'>
-								<label className='space-y-1 text-xs font-semibold text-slate-700'>
-									<span>강사 선택</span>
+							<div className='flex flex-col gap-1'>
+								<p className='text-xs font-semibold text-slate-700 min-w-max'>
+									강사
+								</p>
+								<div className='flex gap-2 items-center'>
 									<select
 										className='rounded-md border border-slate-200 px-2 py-1 text-sm'
 										value={proposal.instructor_id ?? ''}
 										onChange={(e) =>
 											handleInstructorSelect(
 												proposal.key,
-												e.target.value
+												e.target.value,
 											)
 										}>
 										<option value=''>
 											직접 입력 또는 미지정
 										</option>
 										{instructors.map((inst) => (
-											<option key={inst.id} value={inst.id}>
+											<option
+												key={inst.id}
+												value={inst.id}>
 												{inst.name ?? '이름 미입력'} (
 												{inst.email ?? '이메일 없음'})
 											</option>
 										))}
 									</select>
-								</label>
-								<label className='space-y-1 text-xs font-semibold text-slate-700'>
-									<span>강사 이름(직접 입력)</span>
 									<input
-										className='w-full rounded-md border border-slate-200 px-2 py-1 text-sm'
-										placeholder='예: 외부 강사'
+										className='rounded-md border border-slate-200 px-2 py-1 text-sm'
+										placeholder='강사명 직접 입력'
 										value={proposal.instructor_name ?? ''}
 										onChange={(e) =>
 											handleInstructorNameChange(
 												proposal.key,
-												e.target.value
+												e.target.value,
 											)
 										}
-										disabled={Boolean(proposal.instructor_id)}
+										disabled={Boolean(
+											proposal.instructor_id,
+										)}
 									/>
-								</label>
+								</div>
 							</div>
 							<div className='space-y-2'>
 								<p className='text-xs font-semibold text-slate-700'>
@@ -487,55 +490,57 @@ export default function ScheduleProposalGenerator({
 									</p>
 								) : (
 									<ul className='space-y-2'>
-										{proposal.studentIds.map((studentId) => {
-											const profile =
-												profileMap.get(studentId);
-											const age = calculateAge(
-												profile?.birthdate ?? null
-											);
-											const availability =
-												availabilityForStudent(
-													studentId
+										{proposal.studentIds.map(
+											(studentId) => {
+												const profile =
+													profileMap.get(studentId);
+												const age = calculateAge(
+													profile?.birthdate ?? null,
 												);
-											return (
-												<li
-													key={studentId}
-													className='flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-100 px-3 py-2'>
-													<div className='flex flex-col'>
-														<p className='text-sm font-semibold text-slate-900'>
-															{profile?.name ??
-																studentId}
-														</p>
-														<p className='text-xs text-slate-600'>
-															{profile?.phone ??
-																'연락처 없음'}{' '}
-															·{' '}
-															{age !== null
-																? `${age}세`
-																: '나이 정보 없음'}
-														</p>
-														<span className='text-[11px] text-slate-500'>
-															가능 시간대:{' '}
-															{availability}
-														</span>
-													</div>
-													<div className='flex gap-2'>
-														<Button
-															variant='ghost'
-															size='sm'
-															onClick={() =>
-																handleRemoveStudent(
-																	proposal.key,
-																	studentId
-																)
-															}
-															className='text-xs text-red-600'>
-															배정 해제
-														</Button>
-													</div>
-												</li>
-											);
-										})}
+												const availability =
+													availabilityForStudent(
+														studentId,
+													);
+												return (
+													<li
+														key={studentId}
+														className='flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-100 px-3 py-2'>
+														<div className='flex flex-col'>
+															<p className='text-sm font-semibold text-slate-900'>
+																{profile?.name ??
+																	studentId}
+															</p>
+															<p className='text-xs text-slate-600'>
+																{profile?.phone ??
+																	'연락처 없음'}{' '}
+																·{' '}
+																{age !== null
+																	? `${age}세`
+																	: '나이 정보 없음'}
+															</p>
+															<span className='text-[11px] text-slate-500'>
+																가능 시간대:{' '}
+																{availability}
+															</span>
+														</div>
+														<div className='flex gap-2'>
+															<Button
+																variant='ghost'
+																size='sm'
+																onClick={() =>
+																	handleRemoveStudent(
+																		proposal.key,
+																		studentId,
+																	)
+																}
+																className='text-xs text-red-600'>
+																배정 해제
+															</Button>
+														</div>
+													</li>
+												);
+											},
+										)}
 									</ul>
 								)}
 							</div>
@@ -551,14 +556,18 @@ export default function ScheduleProposalGenerator({
 									}>
 									<option value=''>학생 추가</option>
 									{availableOptions.map((student) => (
-										<option key={student.id} value={student.id}>
+										<option
+											key={student.id}
+											value={student.id}>
 											{student.name}
 										</option>
 									))}
 								</select>
 								<Button
 									variant='outline'
-									onClick={() => handleAddStudent(proposal.key)}
+									onClick={() =>
+										handleAddStudent(proposal.key)
+									}
 									disabled={availableOptions.length === 0}>
 									학생 추가
 								</Button>
