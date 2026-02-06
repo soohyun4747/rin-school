@@ -12,6 +12,7 @@ create table if not exists profiles (
   kakao_id text,
   country text,
   guardian_name text,
+  student_course text check (student_course in ('international_school','local_school','homeschool')),
   created_at timestamptz not null default now()
 );
 
@@ -151,7 +152,7 @@ begin
     case when meta_age then 'not_required' else 'pending' end
   );
 
-  insert into public.profiles(id, role, username, name, phone, email, birthdate, kakao_id, country, guardian_name)
+  insert into public.profiles(id, role, username, name, phone, email, birthdate, kakao_id, country, guardian_name, student_course)
   values (
     new.id,
     coalesce(meta->>'role', 'student'),
@@ -162,7 +163,11 @@ begin
     to_date(meta->>'birthdate', 'YYYY-MM-DD'),
     meta->>'kakao_id',
     meta->>'country',
-    meta->>'guardian_name'
+    meta->>'guardian_name',
+    case
+      when coalesce(meta->>'role', 'student') = 'student' then meta->>'student_course'
+      else null
+    end
   );
 
   insert into public.user_consents(user_id, age_confirmed, guardian_email, guardian_status, guardian_token)

@@ -13,6 +13,12 @@ const roles = [
 	{ value: 'instructor', label: '강사' },
 ];
 
+const studentCourseOptions = [
+	{ value: 'international_school', label: '국제학교' },
+	{ value: 'local_school', label: '현지학교' },
+	{ value: 'homeschool', label: '홈스쿨' },
+];
+
 const origin =
   typeof window !== "undefined" ? window.location.origin : "https://rinschool.com";
 
@@ -169,6 +175,7 @@ export default function SignupPage() {
 	const [country, setCountry] = useState('');
 	const [guardianName, setGuardianName] = useState('');
 	const [role, setRole] = useState('student');
+	const [studentCourse, setStudentCourse] = useState('international_school');
 	const [agreedTerms, setAgreedTerms] = useState(false);
 	const [agreedPrivacy, setAgreedPrivacy] = useState(false);
 	const [ageConfirmed, setAgeConfirmed] = useState(true);
@@ -191,6 +198,7 @@ export default function SignupPage() {
 			const trimmedPhone = phone.trim();
 			const trimmedGuardianEmail = guardianEmail.trim();
 			const trimmedGuardianName = guardianName.trim();
+			const trimmedStudentCourse = studentCourse.trim();
 			const supabase = getSupabaseBrowserClient();
 
 			if (password !== confirmPassword) {
@@ -213,6 +221,11 @@ export default function SignupPage() {
 				return;
 			}
 
+			if (role === 'student' && !trimmedStudentCourse) {
+				setError('학생인 경우 재학코스를 선택해주세요.');
+				return;
+			}
+
 			const { data: signUpData, error: signUpError } =
 				await supabase.auth.signUp({
 					email: trimmedEmail,
@@ -228,6 +241,8 @@ export default function SignupPage() {
 							kakao_id: kakaoId || null,
 							country: country || null,
 							guardian_name: trimmedGuardianName || null,
+							student_course:
+								role === 'student' ? trimmedStudentCourse : null,
 							age_confirmed: ageConfirmed,
 							guardian_email: ageConfirmed
 								? null
@@ -416,11 +431,33 @@ export default function SignupPage() {
 									<option
 										key={r.value}
 										value={r.value}>
-										{r.label}
+									{r.label}
+								</option>
+							))}
+						</select>
+					</div>
+					{role === 'student' && (
+						<div>
+							<label className='text-sm font-medium text-slate-700'>
+								재학코스
+							</label>
+							<select
+								value={studentCourse}
+								onChange={(e) =>
+									setStudentCourse(e.target.value)
+								}
+								className='w-full rounded-md border border-slate-200 px-3 py-2'
+								required>
+								{studentCourseOptions.map((option) => (
+									<option
+										key={option.value}
+										value={option.value}>
+										{option.label}
 									</option>
 								))}
 							</select>
 						</div>
+					)}
 						<div className='space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3'>
 							<div className='flex items-center justify-between'>
 								<p className='text-sm font-semibold text-slate-800'>
