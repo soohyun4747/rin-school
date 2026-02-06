@@ -10,6 +10,7 @@ type CourseRow = {
 };
 
 type ApplicationRow = {
+	id: string;
 	course_id: string;
 	student_id: string;
 	created_at: string;
@@ -24,6 +25,7 @@ type ProfileRow = {
 	guardian_name: string | null;
 	birthdate: string | null;
 	country: string | null;
+	student_course: string | null;
 };
 
 type MatchRow = {
@@ -31,6 +33,15 @@ type MatchRow = {
 	slot_start_at: string;
 	slot_end_at: string;
 	match_students: { student_id: string }[] | null;
+};
+
+type TimeChoiceRow = {
+	application_id: string;
+	window: {
+		day_of_week: number;
+		start_time: string;
+		end_time: string;
+	} | null;
 };
 
 const EXCEL_HEADERS = [
@@ -46,6 +57,7 @@ const EXCEL_HEADERS = [
 	'거주국가',
 	'신청일자',
 	'재학코스',
+	'가능한 시간대',
 ];
 
 function escapeXml(value: string) {
@@ -96,6 +108,11 @@ function formatTimeslot(startAt: string, endAt: string) {
 	return `${date} (${day}) ${startTime}~${endTime}`;
 }
 
+const days = ['일', '월', '화', '수', '목', '금', '토'];
+function formatAvailableWindow(window: { day_of_week: number; start_time: string; end_time: string }) {
+	return `${days[window.day_of_week]} ${window.start_time}~${window.end_time}`;
+}
+
 export async function GET() {
 	const supabase = await getSupabaseServerClient();
 	const {
@@ -134,7 +151,7 @@ export async function GET() {
 
 	const { data: allApplications, error: applicationsError } = await supabase
 		.from('applications')
-		.select('course_id, student_id, created_at, status')
+		.select('id, course_id, student_id, created_at, status')
 		.in('course_id', courses.map((course) => course.id))
 		.neq('status', 'cancelled')
 		.order('created_at', { ascending: true });
@@ -149,7 +166,7 @@ export async function GET() {
 
 	const { data: profiles, error: profilesError } = await supabase
 		.from('profiles')
-		.select('id, name, email, kakao_id, phone, guardian_name, birthdate, country')
+		.select('id, name, email, kakao_id, phone, guardian_name, birthdate, country, student_course')
 		.in('id', studentIds.length > 0 ? studentIds : ['']);
 
 	if (profilesError) {
@@ -168,6 +185,17 @@ export async function GET() {
 		return NextResponse.json({ error: '매칭 정보 조회에 실패했습니다.' }, { status: 500 });
 	}
 
+	const applicationIds = applications.map((application) => application.id);
+	const { data: timeChoices, error: timeChoicesError } = await supabase
+		.from('application_time_choices')
+		.select('application_id, window:course_time_windows(day_of_week, start_time, end_time)')
+		.in('application_id', applicationIds.length > 0 ? applicationIds : ['']);
+
+	if (timeChoicesError) {
+		console.error(timeChoicesError);
+		return NextResponse.json({ error: '신청 시간대 조회에 실패했습니다.' }, { status: 500 });
+	}
+
 	const profileMap = new Map((profiles ?? []).map((item) => [item.id, item as ProfileRow]));
 	const courseMap = new Map(courses.map((course) => [course.id, course]));
 
@@ -182,13 +210,13 @@ export async function GET() {
 		});
 	});
 
-	const enrolledCourseMap = new Map<string, Set<string>>();
-	applications.forEach((application) => {
-		const course = courseMap.get(application.course_id);
-		if (!course) return;
-		const enrolled = enrolledCourseMap.get(application.student_id) ?? new Set<string>();
-		enrolled.add(course.title);
-		enrolledCourseMap.set(application.student_id, enrolled);
+	const availableTimeMap = new Map<string, string[]>();
+	((timeChoices ?? []) as TimeChoiceRow[]).forEach((choice) => {
+		if (!choice.window) return;
+		const label = formatAvailableWindow(choice.window);
+		const slots = availableTimeMap.get(choice.application_id) ?? [];
+		slots.push(label);
+		availableTimeMap.set(choice.application_id, slots);
 	});
 
 	const applicationsByCategory = new Map<CourseCategory, { course: CourseRow; app: ApplicationRow }[]>();
@@ -214,7 +242,7 @@ export async function GET() {
 					const student = profileMap.get(app.student_id);
 					const matchKey = `${course.id}:${app.student_id}`;
 					const matchedSlots = [...new Set(matchTimeMap.get(matchKey) ?? [])];
-					const enrolledCourses = [...(enrolledCourseMap.get(app.student_id) ?? new Set())];
+					const availableTimes = [...new Set(availableTimeMap.get(app.id) ?? [])];
 					const cells = [
 						student?.name ?? '',
 						student?.email ?? '',
@@ -227,7 +255,8 @@ export async function GET() {
 						matchedSlots.join(', '),
 						student?.country ?? '',
 						formatDate(app.created_at),
-						enrolledCourses.join(', '),
+						student?.student_course ?? '',
+						availableTimes.join(', '),
 					];
 					return `<Row>${cells.map((cell) => excelCell(cell)).join('')}</Row>`;
 				}),
