@@ -17,6 +17,7 @@ import {
 	CardTitle,
 } from '@/components/ui/card';
 import { formatDateTime, formatDayTime } from '@/lib/time';
+import type { InstructorOption } from './course-form-types';
 
 type ApplicationRow = {
 	id: string;
@@ -51,6 +52,7 @@ type Props = {
 	windows: WindowRow[];
 	applications: ApplicationRow[];
 	profiles: ProfileRow[];
+	instructors: InstructorOption[];
 };
 
 const days = ['일', '월', '화', '수', '목', '금', '토'];
@@ -92,11 +94,16 @@ export default function ScheduleProposalGenerator({
 	windows,
 	applications,
 	profiles,
+	instructors,
 }: Props) {
 	const router = useRouter();
 	const profileMap = useMemo(
 		() => new Map(profiles.map((p) => [p.id, p])),
 		[profiles]
+	);
+	const instructorMap = useMemo(
+		() => new Map(instructors.map((inst) => [inst.id, inst])),
+		[instructors]
 	);
 	const applicationByStudent = useMemo(() => {
 		const map = new Map<string, ApplicationRow>();
@@ -126,11 +133,6 @@ export default function ScheduleProposalGenerator({
 	>({});
 	const [message, setMessage] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
-
-	const instructorLabel = (w: WindowRow) =>
-		w.instructor_id
-			? profileMap.get(w.instructor_id)?.name ?? w.instructor_id
-			: w.instructor_name || '미지정';
 
 	const availabilityForStudent = (studentId: string) => {
 		const app = applicationByStudent.get(studentId);
@@ -256,6 +258,36 @@ export default function ScheduleProposalGenerator({
 		);
 	};
 
+	const handleInstructorSelect = (key: string, instructorId: string) => {
+		setEditableProposals((prev) =>
+			prev.map((proposal) =>
+				proposal.key === key
+					? {
+							...proposal,
+							instructor_id: instructorId || null,
+							instructor_name: instructorId
+								? null
+								: proposal.instructor_name,
+					  }
+					: proposal
+			)
+		);
+	};
+
+	const handleInstructorNameChange = (key: string, name: string) => {
+		setEditableProposals((prev) =>
+			prev.map((proposal) =>
+				proposal.key === key
+					? {
+							...proposal,
+							instructor_name: name,
+							instructor_id: name ? null : proposal.instructor_id,
+					  }
+					: proposal
+			)
+		);
+	};
+
 	const handleRemoveStudent = (key: string, studentId: string) => {
 		setEditableProposals((prev) =>
 			prev.map((proposal) =>
@@ -343,9 +375,9 @@ export default function ScheduleProposalGenerator({
 					</p>
 				)}
 				{editableProposals.map((proposal) => {
-					const windowInfo = windowMap.get(proposal.window_id);
-					const instructorText = windowInfo
-						? instructorLabel(windowInfo)
+					const instructorText = proposal.instructor_id
+						? (instructorMap.get(proposal.instructor_id)?.name ??
+							proposal.instructor_id)
 						: proposal.instructor_name ?? '미지정';
 					const availableOptions = studentOptions.filter(
 						(option) =>
@@ -402,6 +434,45 @@ export default function ScheduleProposalGenerator({
 											)
 										}
 										className='w-full rounded-md border border-slate-200 px-2 py-1 text-sm'
+									/>
+								</label>
+							</div>
+							<div className='grid gap-3 sm:grid-cols-2'>
+								<label className='space-y-1 text-xs font-semibold text-slate-700'>
+									<span>강사 선택</span>
+									<select
+										className='rounded-md border border-slate-200 px-2 py-1 text-sm'
+										value={proposal.instructor_id ?? ''}
+										onChange={(e) =>
+											handleInstructorSelect(
+												proposal.key,
+												e.target.value
+											)
+										}>
+										<option value=''>
+											직접 입력 또는 미지정
+										</option>
+										{instructors.map((inst) => (
+											<option key={inst.id} value={inst.id}>
+												{inst.name ?? '이름 미입력'} (
+												{inst.email ?? '이메일 없음'})
+											</option>
+										))}
+									</select>
+								</label>
+								<label className='space-y-1 text-xs font-semibold text-slate-700'>
+									<span>강사 이름(직접 입력)</span>
+									<input
+										className='w-full rounded-md border border-slate-200 px-2 py-1 text-sm'
+										placeholder='예: 외부 강사'
+										value={proposal.instructor_name ?? ''}
+										onChange={(e) =>
+											handleInstructorNameChange(
+												proposal.key,
+												e.target.value
+											)
+										}
+										disabled={Boolean(proposal.instructor_id)}
 									/>
 								</label>
 							</div>

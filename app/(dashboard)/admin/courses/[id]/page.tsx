@@ -65,8 +65,12 @@ export default async function AdminCourseDetailPage({
 	if (!courseData) notFound();
 	const course: ICourse = courseData;
 
-	const [{ data: windows }, { data: applications }, { data: matches }] =
-		await Promise.all([
+	const [
+		{ data: windows },
+		{ data: applications },
+		{ data: matches },
+		{ data: instructors },
+	] = await Promise.all([
 			supabase
 				.from('course_time_windows')
 				.select(
@@ -89,6 +93,11 @@ export default async function AdminCourseDetailPage({
 				)
 				.eq('course_id', course.id)
 				.order('slot_start_at', { ascending: true }),
+			supabase
+				.from('profiles')
+				.select('id, name, email')
+				.eq('role', 'instructor')
+				.order('name', { ascending: true }),
 		]);
 
 	const profileIds = new Set<string>();
@@ -106,7 +115,9 @@ export default async function AdminCourseDetailPage({
 	const { data: profiles } = profileIds.size
 		? await supabase
 				.from('profiles')
-				.select('id, name, phone, birthdate')
+				.select(
+					'id, name, phone, birthdate, kakao_id, guardian_name'
+				)
 				.in('id', Array.from(profileIds))
 		: {
 				data: [] as {
@@ -114,6 +125,8 @@ export default async function AdminCourseDetailPage({
 					name: string | null;
 					phone: string | null;
 					birthdate: string | null;
+					kakao_id: string | null;
+					guardian_name: string | null;
 				}[],
 			};
 	const profileMap = new Map(profiles?.map((p) => [p.id, p]));
@@ -121,6 +134,8 @@ export default async function AdminCourseDetailPage({
 	const windowsRows: WindowRow[] = windows ?? [];
 	const applicationRows: ApplicationRow[] = applications ?? [];
 	const matchRows: MatchRow[] = matches ?? [];
+	const instructorRows =
+		(instructors ?? []) as { id: string; name: string | null; email: string | null }[];
 
 	const days = ['일', '월', '화', '수', '목', '금', '토'];
 	const choicesByWindow = new Map<string, ApplicationRow[]>();
@@ -274,6 +289,7 @@ export default async function AdminCourseDetailPage({
 					windows={windowsRows}
 					applications={applicationRows}
 					profiles={profiles ?? []}
+					instructors={instructorRows}
 				/>
 			</Card>
 
@@ -448,6 +464,15 @@ export default async function AdminCourseDetailPage({
 											연락처
 										</th>
 										<th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>
+											카카오 ID
+										</th>
+										<th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>
+											학부모명
+										</th>
+										<th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>
+											생년월일
+										</th>
+										<th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>
 											선택 시간
 										</th>
 										<th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>
@@ -475,6 +500,22 @@ export default async function AdminCourseDetailPage({
 													{profileMap.get(
 														app.student_id
 													)?.phone ?? '연락처 없음'}
+												</td>
+												<td className='px-4 py-2 text-slate-700'>
+													{profileMap.get(
+														app.student_id
+													)?.kakao_id ?? '미입력'}
+												</td>
+												<td className='px-4 py-2 text-slate-700'>
+													{profileMap.get(
+														app.student_id
+													)?.guardian_name ??
+														'미입력'}
+												</td>
+												<td className='px-4 py-2 text-slate-700'>
+													{profileMap.get(
+														app.student_id
+													)?.birthdate ?? '미입력'}
 												</td>
 												<td className='px-4 py-2 text-slate-700'>
 													{selections.length === 0
