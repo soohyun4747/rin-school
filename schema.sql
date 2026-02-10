@@ -72,6 +72,16 @@ create table if not exists application_time_choices (
   constraint application_window_unique unique (application_id, window_id)
 );
 
+create table if not exists application_time_requests (
+  id uuid primary key default uuid_generate_v4(),
+  application_id uuid not null references applications(id) on delete cascade,
+  day_of_week int not null check (day_of_week between 0 and 6),
+  start_time time not null,
+  end_time time not null,
+  created_at timestamptz not null default now(),
+  constraint application_time_requests_valid check (start_time < end_time)
+);
+
 create table if not exists instructor_subjects (
   id uuid primary key default uuid_generate_v4(),
   instructor_id uuid not null references profiles(id) on delete cascade,

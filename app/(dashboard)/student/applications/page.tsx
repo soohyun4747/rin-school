@@ -22,6 +22,9 @@ export default async function StudentApplicationsPage() {
         course:course_id(id, title),
         choices:application_time_choices(
           window:course_time_windows(id, day_of_week, start_time, end_time, instructor_name)
+        ),
+        requests:application_time_requests(
+          day_of_week, start_time, end_time
         )
       `
     )
@@ -44,6 +47,11 @@ export default async function StudentApplicationsPage() {
           }
         | null;
     }[];
+    requests?: {
+      day_of_week: number;
+      start_time: string;
+      end_time: string;
+    }[];
   };
 
   const applications: ApplicationRow[] = (apps as ApplicationRow[] | null) ?? [];
@@ -57,7 +65,7 @@ export default async function StudentApplicationsPage() {
         <CardContent className="space-y-2 text-sm">
           {applications.length === 0 && <p className="text-slate-600">신청 내역이 없습니다.</p>}
           {applications.map((app) => {
-            const timeSummaries =
+            const selectedTimeSummaries =
               app.choices?.map((choice) => {
                 const win = choice.window;
                 if (!win) return "삭제된 시간";
@@ -66,17 +74,34 @@ export default async function StudentApplicationsPage() {
                 }`;
               }) ?? [];
 
+            const requestedTimeSummaries =
+              app.requests?.map(
+                (request) =>
+                  `${days[request.day_of_week]} ${request.start_time} - ${request.end_time}`
+              ) ?? [];
+
             return (
             <div key={app.id} className="flex items-center justify-between rounded-md border border-slate-200 px-4 py-3">
               <div>
                 <p className="font-semibold text-slate-900">{app.course?.title ?? "수업"}</p>
                 <p className="text-xs text-slate-600">{formatDateTime(new Date(app.created_at))}</p>
                 <p className="text-xs text-slate-700">상태: {app.status}</p>
-                {timeSummaries.length > 0 && (
+                {selectedTimeSummaries.length > 0 && (
                   <p className="text-xs text-slate-600">
-                    신청 시간:{" "}
-                    {timeSummaries.map((summary, idx) => (
+                    선택한 시간:{" "}
+                    {selectedTimeSummaries.map((summary, idx) => (
                       <span key={`${app.id}-${idx}`}>
+                        {idx > 0 && ", "}
+                        {summary}
+                      </span>
+                    ))}
+                  </p>
+                )}
+                {requestedTimeSummaries.length > 0 && (
+                  <p className="text-xs text-slate-600">
+                    신청한 시간:{" "}
+                    {requestedTimeSummaries.map((summary, idx) => (
+                      <span key={`${app.id}-request-${idx}`}>
                         {idx > 0 && ", "}
                         {summary}
                       </span>

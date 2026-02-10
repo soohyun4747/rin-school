@@ -22,6 +22,11 @@ type ApplicationRow = {
 	status: string;
 	created_at: string;
 	application_time_choices: { window_id: string }[];
+	application_time_requests: {
+		day_of_week: number;
+		start_time: string;
+		end_time: string;
+	}[];
 };
 
 type WindowRow = {
@@ -82,7 +87,7 @@ export default async function AdminCourseDetailPage({
 			supabase
 				.from('applications')
 				.select(
-					'id, student_id, status, created_at, application_time_choices(window_id)'
+					'id, student_id, status, created_at, application_time_choices(window_id), application_time_requests(day_of_week, start_time, end_time)'
 				)
 				.eq('course_id', course.id)
 				.order('created_at', { ascending: false }),
@@ -149,6 +154,11 @@ export default async function AdminCourseDetailPage({
 
 	const windowLabel = (w: WindowRow) =>
 		`${days[w.day_of_week]} ${w.start_time} - ${w.end_time}`;
+	const requestLabel = (request: {
+		day_of_week: number;
+		start_time: string;
+		end_time: string;
+	}) => `${days[request.day_of_week]} ${request.start_time} - ${request.end_time}`;
 	const instructorLabel = (w: {
 		instructor_id: string | null;
 		instructor_name: string | null;
@@ -476,6 +486,9 @@ export default async function AdminCourseDetailPage({
 											선택 시간
 										</th>
 										<th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>
+											신청 시간
+										</th>
+										<th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>
 											상태
 										</th>
 										<th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>
@@ -487,6 +500,8 @@ export default async function AdminCourseDetailPage({
 									{applicationRows.map((app) => {
 										const selections =
 											app.application_time_choices ?? [];
+										const requests =
+											app.application_time_requests ?? [];
 										return (
 											<tr
 												key={app.id}
@@ -540,6 +555,13 @@ export default async function AdminCourseDetailPage({
 																			: '삭제된 시간';
 																	}
 																)
+																.join(', ')}
+												</td>
+												<td className='px-4 py-2 text-slate-700 md:max-w-[400px]'>
+													{requests.length === 0
+														? '신청 없음'
+														: requests
+																.map((request) => requestLabel(request))
 																.join(', ')}
 												</td>
 												<td className='px-4 py-2 text-slate-700'>

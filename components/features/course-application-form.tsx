@@ -46,6 +46,9 @@ function SubmitButton({
 
 export function CourseApplicationForm({ slotGroups, hasActiveApplication, action, capacity }: Props) {
   const [selectedValues, setSelectedValues] = useState<Set<string>>(new Set());
+  const [customSlots, setCustomSlots] = useState([
+    { day_of_week: 1, start_time: "", end_time: "" },
+  ]);
 
   const totalSlots = useMemo(
     () => slotGroups.reduce((count, group) => count + group.slots.length, 0),
@@ -64,8 +67,13 @@ export function CourseApplicationForm({ slotGroups, hasActiveApplication, action
     });
   };
 
+  const hasCustomSelection = customSlots.some(
+    (slot) => slot.start_time && slot.end_time
+  );
+
   const isSubmitDisabled =
-    hasActiveApplication || totalSlots === 0 || selectedValues.size === 0;
+    hasActiveApplication ||
+    (!hasCustomSelection && selectedValues.size === 0);
 
   return (
     <form action={action} className="space-y-4">
@@ -74,7 +82,10 @@ export function CourseApplicationForm({ slotGroups, hasActiveApplication, action
           가능한 한국 시간대를 선택해주세요. 여러 개를 선택할 수 있습니다.
         </p>
         {totalSlots === 0 && (
-          <p className="text-slate-600">관리자가 아직 시간을 등록하지 않았습니다.</p>
+          <div className="space-y-2 text-sm text-slate-600">
+            <p>관리자가 아직 시간을 등록하지 않았습니다.</p>
+            <p>가능한 시간대를 직접 입력해서 신청할 수 있습니다.</p>
+          </div>
         )}
         {slotGroups.map(({ dayIndex, slots }) => (
           <div key={dayIndex} className="space-y-2 rounded-lg border border-slate-200 p-3">
@@ -109,6 +120,105 @@ export function CourseApplicationForm({ slotGroups, hasActiveApplication, action
             </div>
           </div>
         ))}
+        <div className="space-y-3 rounded-lg border border-slate-200 p-3">
+          <p className="text-sm font-semibold text-slate-800">
+            내가 가능한 시간 입력
+          </p>
+          {totalSlots > 0 && (
+            <p className="text-xs text-slate-600">
+              등록된 시간이 있어도 원하는 시간대를 추가로 신청할 수 있습니다.
+            </p>
+          )}
+            <div className="space-y-3">
+              {customSlots.map((slot, index) => (
+                <div
+                  key={`custom-slot-${index}`}
+                  className="flex flex-wrap items-center gap-2 text-sm"
+                >
+                  <select
+                    name="custom_day_of_week"
+                    className="h-9 rounded-md border border-slate-200 px-2"
+                    value={slot.day_of_week}
+                    onChange={(event) => {
+                      const next = Number(event.target.value);
+                      setCustomSlots((prev) =>
+                        prev.map((item, idx) =>
+                          idx === index ? { ...item, day_of_week: next } : item
+                        )
+                      );
+                    }}
+                    disabled={hasActiveApplication}
+                  >
+                    {days.map((label, dayIndex) => (
+                      <option key={`custom-day-${dayIndex}`} value={dayIndex}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="time"
+                    name="custom_start_time"
+                    className="h-9 rounded-md border border-slate-200 px-2"
+                    value={slot.start_time}
+                    onChange={(event) => {
+                      const next = event.target.value;
+                      setCustomSlots((prev) =>
+                        prev.map((item, idx) =>
+                          idx === index ? { ...item, start_time: next } : item
+                        )
+                      );
+                    }}
+                    disabled={hasActiveApplication}
+                  />
+                  <span className="text-slate-400">~</span>
+                  <input
+                    type="time"
+                    name="custom_end_time"
+                    className="h-9 rounded-md border border-slate-200 px-2"
+                    value={slot.end_time}
+                    onChange={(event) => {
+                      const next = event.target.value;
+                      setCustomSlots((prev) =>
+                        prev.map((item, idx) =>
+                          idx === index ? { ...item, end_time: next } : item
+                        )
+                      );
+                    }}
+                    disabled={hasActiveApplication}
+                  />
+                  {customSlots.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-9 px-2 text-xs text-slate-500"
+                      onClick={() =>
+                        setCustomSlots((prev) =>
+                          prev.filter((_, idx) => idx !== index)
+                        )
+                      }
+                      disabled={hasActiveApplication}
+                    >
+                      삭제
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() =>
+                setCustomSlots((prev) => [
+                  ...prev,
+                  { day_of_week: 1, start_time: "", end_time: "" },
+                ])
+              }
+              disabled={hasActiveApplication}
+            >
+              시간 추가
+            </Button>
+          </div>
         <p className="text-xs text-slate-600">선택한 시간 기준으로 신청이 접수됩니다.</p>
       </div>
       <SubmitButton disabled={isSubmitDisabled} hasActiveApplication={hasActiveApplication} />

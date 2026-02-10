@@ -70,13 +70,58 @@ export default async function StudentCourseDetail({
 		existingApplication &&
 		existingApplication.status !== 'cancelled';
 
+	type ApplicationChoiceRow = {
+		window:
+			| {
+					day_of_week: number;
+					start_time: string;
+					end_time: string;
+					instructor_name: string | null;
+					profiles?: { name?: string | null } | null;
+			  }
+			| null;
+	};
+
+	type CustomTimeRequestRow = {
+		day_of_week: number;
+		start_time: string;
+		end_time: string;
+	};
+
+	const { data: applicationChoices } =
+		isStudent && existingApplication
+			? await supabase
+					.from('application_time_choices')
+					.select(
+						'window:course_time_windows(day_of_week, start_time, end_time, instructor_name, profiles(name))'
+					)
+					.eq('application_id', existingApplication.id)
+			: { data: [] as ApplicationChoiceRow[] };
+
+	const { data: customTimeRequests } =
+		isStudent && existingApplication
+			? await supabase
+					.from('application_time_requests')
+					.select('day_of_week, start_time, end_time')
+					.eq('application_id', existingApplication.id)
+					.order('day_of_week', { ascending: true })
+			: { data: [] as CustomTimeRequestRow[] };
+
 	async function action(formData: FormData) {
 		'use server';
 		const selected = formData
 			.getAll('window_ids')
 			.map((w) => String(w))
 			.filter(Boolean);
-		await applyToCourse(course.id, selected);
+		const customDays = formData.getAll('custom_day_of_week');
+		const customStarts = formData.getAll('custom_start_time');
+		const customEnds = formData.getAll('custom_end_time');
+		const customTimes = customDays.map((day, index) => ({
+			day_of_week: Number(day),
+			start_time: String(customStarts[index] ?? ''),
+			end_time: String(customEnds[index] ?? ''),
+		}));
+		await applyToCourse(course.id, selected, customTimes);
 		redirect(`${origin}/student/applications`);
 	}
 
@@ -102,7 +147,7 @@ export default async function StudentCourseDetail({
 						start_time: w.start_time,
 						end_time: w.end_time,
 						instructor_label:
-							slot.profiles?.name ?? slot.instructor_name,
+							w.profiles?.name ?? w.instructor_name,
 					},
 				];
 			}
@@ -119,6 +164,25 @@ export default async function StudentCourseDetail({
                 dayIndex,
                 slots,
         }));
+
+	const appliedTimeSummaries =
+		applicationChoices
+			?.map((choice) => {
+				const win = choice.window;
+				if (!win) return null;
+				const instructorLabel =
+					win.profiles?.name ?? win.instructor_name ?? undefined;
+				return `${days[win.day_of_week]} ${win.start_time} - ${win.end_time}${
+					instructorLabel ? ` · ${instructorLabel}` : ''
+				}`;
+			})
+			.filter(Boolean) ?? [];
+
+	const customTimeSummaries =
+		customTimeRequests?.map(
+			(time) =>
+				`${days[time.day_of_week]} ${time.start_time} - ${time.end_time}`
+		) ?? [];
 
         return (
 		<div className='grid gap-6 lg:grid-cols-[1.1fr_0.9fr] mx-auto max-w-6xl px-4 py-12 space-y-8'>
@@ -217,6 +281,26 @@ export default async function StudentCourseDetail({
                                                                 action={action}
                                                                 capacity={course.capacity}
                                                         />
+							{hasActiveApplication && (
+								<div className='space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700'>
+									<p className='font-semibold text-slate-900'>
+										내가 신청한 시간
+									</p>
+									{appliedTimeSummaries.length === 0 &&
+									customTimeSummaries.length === 0 ? (
+										<p>신청 시간 정보가 없습니다.</p>
+									) : (
+										<ul className='space-y-1'>
+											{appliedTimeSummaries.map((summary, idx) => (
+												<li key={`applied-${idx}`}>{summary}</li>
+											))}
+											{customTimeSummaries.map((summary, idx) => (
+												<li key={`custom-${idx}`}>{summary}</li>
+											))}
+										</ul>
+									)}
+								</div>
+							)}
                                                 </CardContent>
 					</Card>
 				) : (
