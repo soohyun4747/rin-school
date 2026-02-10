@@ -12,6 +12,7 @@ export default function LoginPage() {
 	const [identifier, setIdentifier] = useState('');
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState<string | null>(null);
+	const [keepSignedIn, setKeepSignedIn] = useState(true);
 	const [needsConfirmation, setNeedsConfirmation] = useState(false);
 	const [resendMessage, setResendMessage] = useState<string | null>(null);
 	const [isResending, setIsResending] = useState(false);
@@ -54,7 +55,7 @@ export default function LoginPage() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		const supabase = getSupabaseBrowserClient();
+		const supabase = getSupabaseBrowserClient({ persistAcrossBrowserRestart: keepSignedIn });
 		setError(null);
 		setNeedsConfirmation(false);
 		setResendMessage(null);
@@ -127,7 +128,7 @@ export default function LoginPage() {
 			return;
 		}
 
-		const supabase = getSupabaseBrowserClient();
+		const supabase = getSupabaseBrowserClient({ persistAcrossBrowserRestart: keepSignedIn });
 		setIsResending(true);
 		setResendMessage(null);
 
@@ -192,6 +193,19 @@ export default function LoginPage() {
 								required
 								autoComplete='new-password'
 							/>
+						</div>
+
+						<div className='flex items-center gap-2'>
+							<input
+								id='keepSignedIn'
+								type='checkbox'
+								checked={keepSignedIn}
+								onChange={(e) => setKeepSignedIn(e.target.checked)}
+								className='h-4 w-4 rounded border-slate-300 text-[var(--primary)] focus:ring-[var(--primary)]'
+							/>
+							<label htmlFor='keepSignedIn' className='text-sm text-slate-700'>
+								로그인 상태 유지
+							</label>
 						</div>
 						{confirmationMessage && (
 							<div className='rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800'>

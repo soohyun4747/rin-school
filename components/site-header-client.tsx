@@ -12,12 +12,14 @@ type SiteHeaderClientProps = {
 	roleMenu: MenuItem[];
 	isLoggedIn: boolean;
 	profileRole: Role | null;
+	profileName: string | null;
 };
 
 export function SiteHeaderClient({
 	roleMenu,
 	isLoggedIn,
 	profileRole,
+	profileName,
 }: SiteHeaderClientProps) {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -76,6 +78,9 @@ export function SiteHeaderClient({
 					</nav>
 				</div>
 				<div className='hidden items-center justify-end gap-3 text-sm text-slate-700 md:flex'>
+					{isLoggedIn && profileName && (
+						<span className='text-sm font-medium text-slate-700'>{profileName}님</span>
+					)}
 					{isLoggedIn ? (
 						<form action={logout}>
 							<button

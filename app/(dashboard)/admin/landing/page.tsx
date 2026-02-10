@@ -1,14 +1,12 @@
-import Image from "next/image";
-import { deleteLandingImageByForm, uploadLandingImage } from "@/app/actions/landing";
-import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
-import { fetchLandingImages } from "@/lib/landing";
+import { deleteLandingImageByForm, reorderLandingImages, uploadLandingImage } from '@/app/actions/landing';
+import { AdminLandingImageManager } from '@/components/features/admin-landing-image-manager';
+import { fetchLandingImages } from '@/lib/landing';
 
 export default async function LandingAdminPage() {
   const [desktopImages, mobileImages] = await Promise.all([
-    fetchLandingImages("desktop"),
-    fetchLandingImages("mobile"),
+    fetchLandingImages('desktop'),
+    fetchLandingImages('mobile'),
   ]);
-  
 
   return (
     <div className="space-y-6">
@@ -20,75 +18,30 @@ export default async function LandingAdminPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-3 rounded-2xl border border-[var(--primary-border)] bg-white p-4 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">현재 노출 이미지 목록 (데스크톱)</h2>
-          {desktopImages.length > 0 ? (
-            <div className="space-y-4">
-              {desktopImages.map((image, index) => (
-                <div key={image.path} className="space-y-2 rounded-xl border border-slate-200 p-3">
-                  <p className="text-xs font-medium text-slate-500">순서 {index + 1}</p>
-                  <div className="relative h-48 overflow-hidden rounded-lg border bg-slate-100 md:h-64">
-                    <Image
-                      src={image.publicUrl}
-                      alt={`랜딩 이미지 (데스크톱) ${index + 1}`}
-                      fill
-                      className="object-cover"
-                      sizes="(min-width: 1024px) 720px, 100vw"
-                    />
-                  </div>
-                  <p className="text-xs break-all text-slate-600">링크: {image.linkUrl ?? "설정 안 함"}</p>
-                  <form action={deleteLandingImageByForm}>
-                    <input type="hidden" name="variant" value="desktop" />
-                    <input type="hidden" name="path" value={image.path} />
-                    <ConfirmSubmitButton message="이 랜딩 이미지를 삭제하시겠습니까?" variant="danger" size="sm">
-                      이미지 삭제
-                    </ConfirmSubmitButton>
-                  </form>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-600">아직 업로드된 데스크톱용 랜딩 이미지가 없습니다.</p>
-          )}
-        </div>
+        <AdminLandingImageManager
+          title="현재 노출 이미지 목록 (데스크톱)"
+          variant="desktop"
+          images={desktopImages}
+          emptyMessage="아직 업로드된 데스크톱용 랜딩 이미지가 없습니다."
+          reorderAction={reorderLandingImages}
+          deleteAction={deleteLandingImageByForm}
+        />
 
-        <div className="space-y-3 rounded-2xl border border-[var(--primary-border)] bg-white p-4 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">현재 노출 이미지 목록 (모바일)</h2>
-          {mobileImages.length > 0 ? (
-            <div className="space-y-4">
-              {mobileImages.map((image, index) => (
-                <div key={image.path} className="space-y-2 rounded-xl border border-slate-200 p-3">
-                  <p className="text-xs font-medium text-slate-500">순서 {index + 1}</p>
-                  <div className="relative h-48 overflow-hidden rounded-lg border bg-slate-100 md:h-64">
-                    <Image
-                      src={image.publicUrl}
-                      alt={`랜딩 이미지 (모바일) ${index + 1}`}
-                      fill
-                      className="object-cover"
-                      sizes="(min-width: 1024px) 720px, 100vw"
-                    />
-                  </div>
-                  <p className="text-xs break-all text-slate-600">링크: {image.linkUrl ?? "설정 안 함"}</p>
-                  <form action={deleteLandingImageByForm}>
-                    <input type="hidden" name="variant" value="mobile" />
-                    <input type="hidden" name="path" value={image.path} />
-                    <ConfirmSubmitButton message="이 랜딩 이미지를 삭제하시겠습니까?" variant="danger" size="sm">
-                      이미지 삭제
-                    </ConfirmSubmitButton>
-                  </form>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-600">아직 업로드된 모바일용 랜딩 이미지가 없습니다.</p>
-          )}
-        </div>
+        <AdminLandingImageManager
+          title="현재 노출 이미지 목록 (모바일)"
+          variant="mobile"
+          images={mobileImages}
+          emptyMessage="아직 업로드된 모바일용 랜딩 이미지가 없습니다."
+          reorderAction={reorderLandingImages}
+          deleteAction={deleteLandingImageByForm}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-[var(--primary-border)] bg-white p-4 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">새 이미지 업로드 (데스크톱)</h2>
           <p className="text-sm text-slate-600">업로드할 때마다 목록의 마지막에 추가됩니다.</p>
+          <p className="text-xs text-slate-500">권장 최소 사이즈: 1920 x 1080px</p>
           <form action={uploadLandingImage} className="mt-4 space-y-3">
             <input type="hidden" name="variant" value="desktop" />
             <div className="space-y-1">
@@ -122,6 +75,7 @@ export default async function LandingAdminPage() {
         <div className="rounded-2xl border border-[var(--primary-border)] bg-white p-4 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">새 이미지 업로드 (모바일)</h2>
           <p className="text-sm text-slate-600">업로드할 때마다 목록의 마지막에 추가됩니다.</p>
+          <p className="text-xs text-slate-500">권장 최소 사이즈: 1080 x 1440px</p>
           <form action={uploadLandingImage} className="mt-4 space-y-3">
             <input type="hidden" name="variant" value="mobile" />
             <div className="space-y-1">

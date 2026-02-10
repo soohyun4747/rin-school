@@ -149,3 +149,39 @@ export async function deleteLandingImageByForm(formData: FormData) {
   const landingVariant: LandingVariant = variant === "mobile" ? "mobile" : "desktop";
   await deleteLandingImage(path, landingVariant);
 }
+
+export async function reorderLandingImages(formData: FormData) {
+  const { profile } = await requireSession();
+  requireRole(profile.role, ["admin"]);
+
+  const variant = parseVariant(formData);
+  const orderedPaths = formData.get("orderedPaths");
+
+  if (typeof orderedPaths !== "string") {
+    throw new Error("이미지 순서 정보가 올바르지 않습니다.");
+  }
+
+  let parsedPaths: string[];
+  try {
+    const raw = JSON.parse(orderedPaths) as unknown;
+    if (!Array.isArray(raw) || !raw.every((item) => typeof item === "string")) {
+      throw new Error("invalid ordered paths");
+    }
+    parsedPaths = raw;
+  } catch {
+    throw new Error("이미지 순서 정보를 해석하지 못했습니다.");
+  }
+
+  const metadata = await readLandingMetadata(variant);
+  const metadataMap = new Map(metadata.map((item) => [item.path, item]));
+
+  if (parsedPaths.length !== metadata.length || parsedPaths.some((path) => !metadataMap.has(path))) {
+    throw new Error("현재 이미지 목록과 순서 정보가 일치하지 않습니다. 새로고침 후 다시 시도해주세요.");
+  }
+
+  const reordered = parsedPaths.map((path) => metadataMap.get(path)!);
+  await writeLandingMetadata(variant, reordered);
+
+  revalidatePath("/");
+  revalidatePath("/admin/landing");
+}

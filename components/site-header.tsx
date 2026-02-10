@@ -43,6 +43,7 @@ export async function SiteHeader() {
                         roleMenu={roleMenu}
                         isLoggedIn={isLoggedIn}
                         profileRole={profile?.role ?? null}
+                        profileName={profile?.name ?? null}
                 />
         );
 }
