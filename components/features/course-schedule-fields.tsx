@@ -76,6 +76,51 @@ export function CourseScheduleFields({
 		]);
 	};
 
+	const addAllWeekWindows = () => {
+		setWindows((prev) => {
+			if (!prev.length) return prev;
+
+			const baseWindow = prev[prev.length - 1];
+			if (!baseWindow.start_time || !baseWindow.end_time) {
+				alert('전체 시간을 추가하려면 마지막 시간의 시작/종료를 먼저 입력해주세요.');
+				return prev;
+			}
+
+			const weekDaysFromMonday = [1, 2, 3, 4, 5, 6, 0];
+			const exists = (dayOfWeek: number) =>
+				prev.some(
+					(window) =>
+						window.day_of_week === dayOfWeek &&
+						window.start_time === baseWindow.start_time &&
+						window.end_time === baseWindow.end_time &&
+						(window.instructor_id ?? '') ===
+							(baseWindow.instructor_id ?? '') &&
+						(window.instructor_name ?? '') ===
+							(baseWindow.instructor_name ?? '')
+				);
+
+			const missingDays = weekDaysFromMonday.filter(
+				(dayOfWeek) => !exists(dayOfWeek)
+			);
+
+			if (!missingDays.length) {
+				alert('이미 월요일부터 일요일까지 전체 시간이 추가되어 있습니다.');
+				return prev;
+			}
+
+			const nextWindows = missingDays.map((dayOfWeek) => ({
+				clientId: `${idPrefix}-${nanoid()}`,
+				day_of_week: dayOfWeek,
+				start_time: baseWindow.start_time,
+				end_time: baseWindow.end_time,
+				instructor_id: baseWindow.instructor_id,
+				instructor_name: baseWindow.instructor_name,
+			}));
+
+			return [...prev, ...nextWindows];
+		});
+	};
+
 	const updateWindow = (
 		clientId: string,
 		patch: Partial<TimeWindowField>
@@ -136,13 +181,22 @@ export function CourseScheduleFields({
 					<p className='text-sm font-medium text-slate-800'>
 						가능 시간
 					</p>
-					<Button
-						type='button'
-						variant='secondary'
-						size='sm'
-						onClick={addWindow}>
-						시간 추가
-					</Button>
+					<div className='flex items-center gap-2'>
+						<Button
+							type='button'
+							variant='outline'
+							size='sm'
+							onClick={addAllWeekWindows}>
+							전체 시간 추가
+						</Button>
+						<Button
+							type='button'
+							variant='secondary'
+							size='sm'
+							onClick={addWindow}>
+							시간 추가
+						</Button>
+					</div>
 				</div>
 
 				<div className='space-y-2'>
