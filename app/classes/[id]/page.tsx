@@ -11,7 +11,9 @@ import { CourseApplicationForm } from '@/components/features/course-application-
 const days = ['일', '월', '화', '수', '목', '금', '토'];
 
 const origin =
-  typeof window !== "undefined" ? window.location.origin : "https://rinschool.com";
+	typeof window !== 'undefined'
+		? window.location.origin
+		: 'https://rinschool.com';
 
 export default async function StudentCourseDetail({
 	params,
@@ -26,26 +28,26 @@ export default async function StudentCourseDetail({
 	const isStudent = profile.role === 'student';
 	const supabase = await getSupabaseServerClient();
 
-        const { data } = await supabase
-                .from('courses')
-                .select(
-                        'id, title, subject, grade_range, description, duration_minutes, capacity, image_url, weeks, is_closed'
-                )
-                .eq('id', id)
-                .single();
+	const { data } = await supabase
+		.from('courses')
+		.select(
+			'id, title, subject, grade_range, description, duration_minutes, capacity, image_url, weeks, is_closed',
+		)
+		.eq('id', id)
+		.single();
 
-        if (!data) notFound();
+	if (!data) notFound();
 
-        const course: ICourse = data;
+	const course: ICourse = data;
 
-        if (course.is_closed) {
-                redirect(`${origin}/classes`);
-        }
+	if (course.is_closed) {
+		redirect(`${origin}/classes`);
+	}
 
 	const { data: windows, error } = await supabase
 		.from('course_time_windows')
 		.select(
-			'id, day_of_week, start_time, end_time, instructor_id, instructor_name, profiles (name)'
+			'id, day_of_week, start_time, end_time, instructor_id, instructor_name, profiles (name)',
 		)
 		.eq('course_id', course.id)
 		.order('day_of_week', { ascending: true });
@@ -71,15 +73,13 @@ export default async function StudentCourseDetail({
 		existingApplication.status !== 'cancelled';
 
 	type ApplicationChoiceRow = {
-		window:
-			| {
-					day_of_week: number;
-					start_time: string;
-					end_time: string;
-					instructor_name: string | null;
-					profiles?: { name?: string | null } | null;
-			  }
-			| null;
+		window: {
+			day_of_week: number;
+			start_time: string;
+			end_time: string;
+			instructor_name: string | null;
+			profiles?: { name?: string | null } | null;
+		} | null;
 	};
 
 	type CustomTimeRequestRow = {
@@ -93,7 +93,7 @@ export default async function StudentCourseDetail({
 			? await supabase
 					.from('application_time_choices')
 					.select(
-						'window:course_time_windows(day_of_week, start_time, end_time, instructor_name, profiles(name))'
+						'window:course_time_windows(day_of_week, start_time, end_time, instructor_name, profiles(name))',
 					)
 					.eq('application_id', existingApplication.id)
 			: { data: [] as ApplicationChoiceRow[] };
@@ -136,7 +136,7 @@ export default async function StudentCourseDetail({
 						end_time: slot.end_time,
 						instructor_label:
 							slot.profiles?.name ?? slot.instructor_name,
-					})
+					}),
 				);
 			} catch (err) {
 				console.error('slot split failed', err);
@@ -146,24 +146,25 @@ export default async function StudentCourseDetail({
 						day_of_week: w.day_of_week,
 						start_time: w.start_time,
 						end_time: w.end_time,
-						instructor_label:
-							w.profiles?.name ?? w.instructor_name,
+						instructor_label: w.profiles?.name ?? w.instructor_name,
 					},
 				];
 			}
 		}) ?? [];
 
-        const slotsByDay = slotOptions.reduce((acc, slot) => {
-                const list = acc.get(slot.day_of_week) ?? [];
-                list.push(slot);
-                acc.set(slot.day_of_week, list);
-                return acc;
-        }, new Map<number, typeof slotOptions>());
+	const slotsByDay = slotOptions.reduce((acc, slot) => {
+		const list = acc.get(slot.day_of_week) ?? [];
+		list.push(slot);
+		acc.set(slot.day_of_week, list);
+		return acc;
+	}, new Map<number, typeof slotOptions>());
 
-        const slotGroups = Array.from(slotsByDay.entries()).map(([dayIndex, slots]) => ({
-                dayIndex,
-                slots,
-        }));
+	const slotGroups = Array.from(slotsByDay.entries()).map(
+		([dayIndex, slots]) => ({
+			dayIndex,
+			slots,
+		}),
+	);
 
 	const appliedTimeSummaries =
 		applicationChoices
@@ -181,10 +182,10 @@ export default async function StudentCourseDetail({
 	const customTimeSummaries =
 		customTimeRequests?.map(
 			(time) =>
-				`${days[time.day_of_week]} ${time.start_time} - ${time.end_time}`
+				`${days[time.day_of_week]} ${time.start_time} - ${time.end_time}`,
 		) ?? [];
 
-        return (
+	return (
 		<div className='grid gap-6 lg:grid-cols-[1.1fr_0.9fr] mx-auto max-w-6xl px-4 py-12 space-y-8'>
 			<div className='space-y-4'>
 				<div className='overflow-hidden rounded-lg border border-[var(--primary-border)] bg-[var(--primary-soft)]'>
@@ -271,16 +272,16 @@ export default async function StudentCourseDetail({
 				</Card> */}
 				{isStudent ? (
 					<Card>
-                                                <CardHeader>
-                                                        <CardTitle>신청 시간 선택</CardTitle>
-                                                </CardHeader>
-                                                <CardContent className='space-y-4'>
-                                                        <CourseApplicationForm
-                                                                slotGroups={slotGroups}
-                                                                hasActiveApplication={hasActiveApplication}
-                                                                action={action}
-                                                                capacity={course.capacity}
-                                                        />
+						<CardHeader>
+							<CardTitle>신청 시간 선택</CardTitle>
+						</CardHeader>
+						<CardContent className='space-y-4'>
+							<CourseApplicationForm
+								slotGroups={slotGroups}
+								hasActiveApplication={hasActiveApplication}
+								action={action}
+								capacity={course.capacity}
+							/>
 							{hasActiveApplication && (
 								<div className='space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700'>
 									<p className='font-semibold text-slate-900'>
@@ -291,17 +292,25 @@ export default async function StudentCourseDetail({
 										<p>신청 시간 정보가 없습니다.</p>
 									) : (
 										<ul className='space-y-1'>
-											{appliedTimeSummaries.map((summary, idx) => (
-												<li key={`applied-${idx}`}>{summary}</li>
-											))}
-											{customTimeSummaries.map((summary, idx) => (
-												<li key={`custom-${idx}`}>{summary}</li>
-											))}
+											{appliedTimeSummaries.map(
+												(summary, idx) => (
+													<li key={`applied-${idx}`}>
+														{summary}
+													</li>
+												),
+											)}
+											{customTimeSummaries.map(
+												(summary, idx) => (
+													<li key={`custom-${idx}`}>
+														{summary}
+													</li>
+												),
+											)}
 										</ul>
 									)}
 								</div>
 							)}
-                                                </CardContent>
+						</CardContent>
 					</Card>
 				) : (
 					<Card>
@@ -314,39 +323,40 @@ export default async function StudentCourseDetail({
 								있습니다. 신청은 학생 계정으로만 가능합니다.
 							</p>
 							{slotGroups.length === 0 && (
-                                                                <p className='text-slate-600'>
-                                                                        등록된 시간이 없습니다.
-                                                                </p>
-                                                        )}
-                                                        {slotGroups.map(({ dayIndex, slots }) => (
-                                                                <div
-                                                                        key={dayIndex}
-                                                                        className='space-y-2 rounded-lg border border-slate-200 p-3'>
-                                                                        <p className='text-sm font-semibold text-slate-800'>
-                                                                                {days[dayIndex]}
-                                                                        </p>
-                                                                        <div className='space-y-2'>
-                                                                                {slots.map((slot) => (
-                                                                                        <div
-                                                                                                key={slot.value}
-                                                                                                className='flex items-center justify-between rounded-md border border-slate-100 px-3 py-2 text-sm'>
-                                                                                                <div>
-                                                                                                        <p className='font-semibold text-slate-900'>
-                                                                                                                {slot.start_time} -{' '}
-                                                                                                                {slot.end_time}
-                                                                                                        </p>
-                                                                                                        <p className='text-xs text-slate-600'>
-                                                                                                                강사:{' '}
-                                                                                                                {slot.instructor_label}{' '}
-                                                                                                                · 정원 {course.capacity}명
-                                                                                                        </p>
-                                                                                                </div>
-                                                                                        </div>
-                                                                                ))}
-                                                                        </div>
-                                                                </div>
-                                                        ))}
-</CardContent>
+								<p className='text-slate-600'>
+									등록된 시간이 없습니다.
+								</p>
+							)}
+							{slotGroups.map(({ dayIndex, slots }) => (
+								<div
+									key={dayIndex}
+									className='space-y-2 rounded-lg border border-slate-200 p-3'>
+									<p className='text-sm font-semibold text-slate-800'>
+										{days[dayIndex]}
+									</p>
+									<div className='space-y-2'>
+										{slots.map((slot) => (
+											<div
+												key={slot.value}
+												className='flex items-center justify-between rounded-md border border-slate-100 px-3 py-2 text-sm'>
+												<div>
+													<p className='font-semibold text-slate-900'>
+														{slot.start_time} -{' '}
+														{slot.end_time}
+													</p>
+													<p className='text-xs text-slate-600'>
+														강사:{' '}
+														{slot.instructor_label}{' '}
+														· 정원 {course.capacity}
+														명
+													</p>
+												</div>
+											</div>
+										))}
+									</div>
+								</div>
+							))}
+						</CardContent>
 					</Card>
 				)}
 			</div>

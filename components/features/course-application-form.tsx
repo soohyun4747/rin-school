@@ -122,11 +122,11 @@ export function CourseApplicationForm({ slotGroups, hasActiveApplication, action
         ))}
         <div className="space-y-3 rounded-lg border border-slate-200 p-3">
           <p className="text-sm font-semibold text-slate-800">
-            내가 가능한 시간 입력
+            시간 신청
           </p>
           {totalSlots > 0 && (
             <p className="text-xs text-slate-600">
-              등록된 시간이 있어도 원하는 시간대를 추가로 신청할 수 있습니다.
+              가능한 시간대가 없는 경우 시간대를 신청해주시면 연락드리겠습니다.
             </p>
           )}
             <div className="space-y-3">
@@ -206,7 +206,7 @@ export function CourseApplicationForm({ slotGroups, hasActiveApplication, action
             </div>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               className="w-full"
               onClick={() =>
                 setCustomSlots((prev) => [
