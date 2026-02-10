@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ConfirmSubmitButton } from '@/components/ui/confirm-submit-button';
 import { requireSession, requireRole } from '@/lib/auth';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { formatDateTime, formatDayTime } from '@/lib/time';
+import { formatDateTime, formatDayTime, trimSeconds } from '@/lib/time';
 import {
 	addStudentToMatch,
 	removeStudentFromMatch,
@@ -15,6 +15,7 @@ import type { ICourse } from '../page';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import ScheduleProposalGenerator from '@/components/features/schedule-proposal-generator';
+import { statusMap } from '@/lib/utils';
 
 type ApplicationRow = {
 	id: string;
@@ -62,7 +63,7 @@ export default async function AdminCourseDetailPage({
 	const { data: courseData } = await supabase
 		.from('courses')
 		.select(
-			'id, title, subject, grade_range, description, duration_minutes, capacity, image_url, weeks, is_closed'
+			'id, title, subject, grade_range, description, duration_minutes, capacity, image_url, weeks, is_closed',
 		)
 		.eq('id', id)
 		.single();
@@ -76,41 +77,41 @@ export default async function AdminCourseDetailPage({
 		{ data: matches },
 		{ data: instructors },
 	] = await Promise.all([
-			supabase
-				.from('course_time_windows')
-				.select(
-					'id, day_of_week, start_time, end_time, instructor_id, instructor_name'
-				)
-				.eq('course_id', course.id)
-				.order('day_of_week', { ascending: true })
-				.order('start_time', { ascending: true }),
-			supabase
-				.from('applications')
-				.select(
-					'id, student_id, status, created_at, application_time_choices(window_id), application_time_requests(day_of_week, start_time, end_time)'
-				)
-				.eq('course_id', course.id)
-				.order('created_at', { ascending: false }),
-			supabase
-				.from('matches')
-				.select(
-					'id, instructor_id, instructor_name, slot_start_at, slot_end_at, status, match_students(student_id)'
-				)
-				.eq('course_id', course.id)
-				.order('slot_start_at', { ascending: true }),
-			supabase
-				.from('profiles')
-				.select('id, name, email')
-				.eq('role', 'instructor')
-				.order('name', { ascending: true }),
-		]);
+		supabase
+			.from('course_time_windows')
+			.select(
+				'id, day_of_week, start_time, end_time, instructor_id, instructor_name',
+			)
+			.eq('course_id', course.id)
+			.order('day_of_week', { ascending: true })
+			.order('start_time', { ascending: true }),
+		supabase
+			.from('applications')
+			.select(
+				'id, student_id, status, created_at, application_time_choices(window_id), application_time_requests(day_of_week, start_time, end_time)',
+			)
+			.eq('course_id', course.id)
+			.order('created_at', { ascending: false }),
+		supabase
+			.from('matches')
+			.select(
+				'id, instructor_id, instructor_name, slot_start_at, slot_end_at, status, match_students(student_id)',
+			)
+			.eq('course_id', course.id)
+			.order('slot_start_at', { ascending: true }),
+		supabase
+			.from('profiles')
+			.select('id, name, email')
+			.eq('role', 'instructor')
+			.order('name', { ascending: true }),
+	]);
 
 	const profileIds = new Set<string>();
 	(windows as WindowRow[] | null)?.forEach((w) => {
 		if (w.instructor_id) profileIds.add(w.instructor_id);
 	});
 	(applications as ApplicationRow[] | null)?.forEach((app) =>
-		profileIds.add(app.student_id)
+		profileIds.add(app.student_id),
 	);
 	(matches as MatchRow[] | null)?.forEach((m) => {
 		m.match_students?.forEach((ms) => profileIds.add(ms.student_id));
@@ -120,9 +121,7 @@ export default async function AdminCourseDetailPage({
 	const { data: profiles } = profileIds.size
 		? await supabase
 				.from('profiles')
-				.select(
-					'id, name, phone, birthdate, kakao_id, guardian_name'
-				)
+				.select('id, name, phone, birthdate, kakao_id, guardian_name')
 				.in('id', Array.from(profileIds))
 		: {
 				data: [] as {
@@ -139,8 +138,11 @@ export default async function AdminCourseDetailPage({
 	const windowsRows: WindowRow[] = windows ?? [];
 	const applicationRows: ApplicationRow[] = applications ?? [];
 	const matchRows: MatchRow[] = matches ?? [];
-	const instructorRows =
-		(instructors ?? []) as { id: string; name: string | null; email: string | null }[];
+	const instructorRows = (instructors ?? []) as {
+		id: string;
+		name: string | null;
+		email: string | null;
+	}[];
 
 	const days = ['일', '월', '화', '수', '목', '금', '토'];
 	const choicesByWindow = new Map<string, ApplicationRow[]>();
@@ -153,12 +155,13 @@ export default async function AdminCourseDetailPage({
 	});
 
 	const windowLabel = (w: WindowRow) =>
-		`${days[w.day_of_week]} ${w.start_time} - ${w.end_time}`;
+		`${days[w.day_of_week]} ${trimSeconds(w.start_time)} - ${trimSeconds(w.end_time)}`;
 	const requestLabel = (request: {
 		day_of_week: number;
 		start_time: string;
 		end_time: string;
-	}) => `${days[request.day_of_week]} ${request.start_time} - ${request.end_time}`;
+	}) =>
+		`${days[request.day_of_week]} ${trimSeconds(request.start_time)} - ${trimSeconds(request.end_time)}`;
 	const instructorLabel = (w: {
 		instructor_id: string | null;
 		instructor_name: string | null;
@@ -167,7 +170,7 @@ export default async function AdminCourseDetailPage({
 			? (profileMap.get(w.instructor_id)?.name ?? w.instructor_id)
 			: w.instructor_name || '미지정';
 	const badgeVariant = (
-		status: string
+		status: string,
 	): 'info' | 'success' | 'warning' | 'danger' => {
 		if (status === 'confirmed') return 'success';
 		if (status === 'proposed') return 'warning';
@@ -176,7 +179,7 @@ export default async function AdminCourseDetailPage({
 	};
 	const confirmedMatches = matchRows.filter((m) => m.status !== 'proposed');
 	const studentOptions = Array.from(
-		new Set(applicationRows.map((app) => app.student_id))
+		new Set(applicationRows.map((app) => app.student_id)),
 	).map((id) => ({
 		id,
 		name: profileMap.get(id)?.name ?? id,
@@ -260,23 +263,23 @@ export default async function AdminCourseDetailPage({
 													<div>
 														<p className='text-sm font-semibold text-slate-900'>
 															{profileMap.get(
-																app.student_id
+																app.student_id,
 															)?.name ??
 																app.student_id}
 														</p>
 														<p className='text-xs text-slate-600'>
 															{profileMap.get(
-																app.student_id
+																app.student_id,
 															)?.phone ??
 																'연락처 없음'}{' '}
-															· {app.status}
+															· {statusMap[app.status].label}
 														</p>
 													</div>
 													<span className='text-[11px] text-slate-500'>
 														{formatDateTime(
 															new Date(
-																app.created_at
-															)
+																app.created_at,
+															),
 														)}
 													</span>
 												</li>
@@ -315,10 +318,10 @@ export default async function AdminCourseDetailPage({
 					)}
 					{confirmedMatches.map((match) => {
 						const assignedIds = new Set(
-							match.match_students.map((ms) => ms.student_id)
+							match.match_students.map((ms) => ms.student_id),
 						);
 						const addableStudents = studentOptions.filter(
-							(s) => !assignedIds.has(s.id)
+							(s) => !assignedIds.has(s.id),
 						);
 						return (
 							<div
@@ -328,18 +331,18 @@ export default async function AdminCourseDetailPage({
 									<div>
 										<p className='text-sm font-semibold text-slate-900'>
 											{formatDayTime(
-												new Date(match.slot_start_at)
+												new Date(match.slot_start_at),
 											)}{' '}
 											~{' '}
 											{formatDayTime(
-												new Date(match.slot_end_at)
+												new Date(match.slot_end_at),
 											)}
 										</p>
 										<p className='text-xs text-slate-600'>
 											강사:{' '}
 											{match.instructor_id
 												? (profileMap.get(
-														match.instructor_id
+														match.instructor_id,
 													)?.name ??
 													match.instructor_id)
 												: (match.instructor_name ??
@@ -349,7 +352,7 @@ export default async function AdminCourseDetailPage({
 									<div className='flex items-center gap-2'>
 										<Badge
 											variant={badgeVariant(
-												match.status
+												match.status,
 											)}>
 											확정됨
 										</Badge>
@@ -357,7 +360,7 @@ export default async function AdminCourseDetailPage({
 											action={deleteMatchSchedule.bind(
 												null,
 												course.id,
-												match.id
+												match.id,
 											)}>
 											<ConfirmSubmitButton
 												variant='ghost'
@@ -385,13 +388,13 @@ export default async function AdminCourseDetailPage({
 													<div>
 														<p className='text-sm font-semibold text-slate-900'>
 															{profileMap.get(
-																ms.student_id
+																ms.student_id,
 															)?.name ??
 																ms.student_id}
 														</p>
 														<p className='text-xs text-slate-600'>
 															{profileMap.get(
-																ms.student_id
+																ms.student_id,
 															)?.phone ??
 																'연락처 없음'}
 														</p>
@@ -401,7 +404,7 @@ export default async function AdminCourseDetailPage({
 															null,
 															course.id,
 															match.id,
-															ms.student_id
+															ms.student_id,
 														)}>
 														<ConfirmSubmitButton
 															variant='ghost'
@@ -418,7 +421,7 @@ export default async function AdminCourseDetailPage({
 								<form
 									action={addStudentToMatch.bind(
 										null,
-										course.id
+										course.id,
 									)}
 									className='flex flex-col gap-2 sm:flex-row sm:items-center'>
 									<input
@@ -508,68 +511,105 @@ export default async function AdminCourseDetailPage({
 												className='hover:bg-slate-50'>
 												<td className='px-4 py-2 font-semibold text-slate-900'>
 													{profileMap.get(
-														app.student_id
+														app.student_id,
 													)?.name ?? '학생'}
 												</td>
 												<td className='px-4 py-2 text-slate-700'>
 													{profileMap.get(
-														app.student_id
+														app.student_id,
 													)?.phone ?? '연락처 없음'}
 												</td>
 												<td className='px-4 py-2 text-slate-700'>
 													{profileMap.get(
-														app.student_id
+														app.student_id,
 													)?.kakao_id ?? '미입력'}
 												</td>
 												<td className='px-4 py-2 text-slate-700'>
 													{profileMap.get(
-														app.student_id
+														app.student_id,
 													)?.guardian_name ??
 														'미입력'}
 												</td>
 												<td className='px-4 py-2 text-slate-700'>
 													{profileMap.get(
-														app.student_id
+														app.student_id,
 													)?.birthdate ?? '미입력'}
 												</td>
-												<td className='px-4 py-2 text-slate-700 md:max-w-[400px]'>
-													{selections.length === 0
-														? '선택 없음'
-														: selections
-																.map(
-																	(
-																		choice
-																	) => {
-																		const w =
-																			windowsRows.find(
-																				(
-																					win
-																				) =>
-																					win.id ===
-																					choice.window_id
-																			);
-																		return w
+												<td className='px-4 py-2 text-slate-700 md:max-w-[150px]'>
+													{selections.length === 0 ? (
+														'선택 없음'
+													) : (
+														<div className='space-y-1'>
+															{selections.map(
+																(
+																	choice,
+																	index,
+																) => {
+																	const w =
+																		windowsRows.find(
+																			(
+																				win,
+																			) =>
+																				win.id ===
+																				choice.window_id,
+																		);
+
+																	const label =
+																		w
 																			? windowLabel(
-																					w
+																					w,
 																				)
 																			: '삭제된 시간';
-																	}
-																)
-																.join(', ')}
+
+																	return (
+																		<div
+																			key={
+																				choice.window_id ??
+																				index
+																			}>
+																			{
+																				label
+																			}
+																		</div>
+																	);
+																},
+															)}
+														</div>
+													)}
 												</td>
-												<td className='px-4 py-2 text-slate-700 md:max-w-[400px]'>
-													{requests.length === 0
-														? '신청 없음'
-														: requests
-																.map((request) => requestLabel(request))
-																.join(', ')}
+												<td className='px-4 py-2 text-slate-700 md:max-w-[150px]'>
+													{requests.length === 0 ? (
+														'신청 없음'
+													) : (
+														<div className='space-y-1'>
+															{requests.map(
+																(
+																	request,
+																	index,
+																) => (
+																	<div
+																		key={
+																			request.id ??
+																			index
+																		}>
+																		{requestLabel(
+																			request,
+																		)}
+																	</div>
+																),
+															)}
+														</div>
+													)}
 												</td>
+
 												<td className='px-4 py-2 text-slate-700'>
-													{app.status}
+													{statusMap[app.status].label}
 												</td>
 												<td className='px-4 py-2 text-slate-500'>
 													{formatDateTime(
-														new Date(app.created_at)
+														new Date(
+															app.created_at,
+														),
 													)}
 												</td>
 											</tr>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { COURSE_CATEGORIES, normalizeCourseCategory, type CourseCategory } from '@/lib/course-categories';
+import { trimSeconds } from '@/lib/time';
 
 type CourseRow = {
 	id: string;
@@ -118,7 +119,7 @@ function formatTimeslot(startAt: string, endAt: string) {
 
 const days = ['일', '월', '화', '수', '목', '금', '토'];
 function formatAvailableWindow(window: { day_of_week: number; start_time: string; end_time: string }) {
-	return `${days[window.day_of_week]} ${window.start_time}~${window.end_time}`;
+	return `${days[window.day_of_week]} ${trimSeconds(window.start_time)}~${trimSeconds(window.end_time)}`;
 }
 
 export async function GET() {
@@ -278,7 +279,7 @@ export async function GET() {
 						student?.guardian_name ?? '',
 						student?.birthdate ?? '',
 						course.title,
-						matchedSlots.length > 0 ? '매칭됨' : '미매칭',
+						matchedSlots.length > 0 ? '매칭완료' : '매칭안됨',
 						matchedSlots.join(', '),
 						student?.country ?? '',
 						formatDate(app.created_at),

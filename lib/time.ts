@@ -47,7 +47,7 @@ export function splitWindowByDuration<
 	}
 	if (total % durationMinutes !== 0) {
 		throw new Error(
-			'수업 길이(duration_minutes)로 나누어떨어지는 시간 범위만 등록할 수 있습니다.'
+			'수업 길이(duration_minutes)로 나누어떨어지는 시간 범위만 등록할 수 있습니다.',
 		);
 	}
 
@@ -67,7 +67,7 @@ export function splitWindowByDuration<
 
 export function generateSlotsFromWindows(
 	windows: TimeWindow[],
-	options: { days?: number; durationMinutes?: number; from?: Date } = {}
+	options: { days?: number; durationMinutes?: number; from?: Date } = {},
 ) {
 	const now = options.from ?? new Date();
 	const days = options.days ?? 14;
@@ -118,7 +118,6 @@ export function formatDateTime(date: Date) {
 	});
 }
 
-
 export function formatDayTime(date: Date) {
 	return date.toLocaleString('ko-KR', {
 		timeZone: 'Asia/Seoul',
@@ -150,7 +149,7 @@ const KST_OFFSET_MINUTES = 9 * 60;
 export function combineDayAndTime(
 	dayOfWeek: number, // 0=Sun ... 6=Sat (JS 기준)
 	timeStr: string, // "22:00:00" or "22:00"
-	reference: Date // 기준(현재)
+	reference: Date, // 기준(현재)
 ) {
 	const [hh, mm = '0', ss = '0'] = timeStr.split(':');
 	const h = Number(hh);
@@ -184,7 +183,7 @@ export function combineDayAndTime(
 
 export function buildSlotsFromDayTimeRanges(
 	ranges: DayTimeRange[],
-	options: { referenceDate?: Date } = {}
+	options: { referenceDate?: Date } = {},
 ) {
 	const reference = options.referenceDate ?? new Date();
 
@@ -216,12 +215,12 @@ export function buildSlotsFromDayTimeRanges(
 			const startAt = getNextDateForDay(
 				range.day_of_week,
 				reference,
-				range.start_time
+				range.start_time,
 			);
 			const endAt = getNextDateForDay(
 				range.day_of_week,
 				reference,
-				range.end_time
+				range.end_time,
 			);
 
 			if (startAt >= endAt) return null;
@@ -241,7 +240,7 @@ export function generateWindowOccurrences(
 		start_time: string;
 		end_time: string;
 	}[],
-	options: { from: Date; to: Date }
+	options: { from: Date; to: Date },
 ) {
 	const occurrences: { windowId: string; start: Date; end: Date }[] = [];
 	const start = new Date(options.from);
@@ -277,3 +276,8 @@ export function generateWindowOccurrences(
 }
 
 export const toHHMM = (t: string) => t.slice(0, 5);
+
+export function trimSeconds(time: string) {
+	// "20:00:00" -> "20:00"
+	return time.slice(0, 5);
+}

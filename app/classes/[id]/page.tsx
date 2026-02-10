@@ -236,8 +236,7 @@ export default async function StudentCourseDetail({
 							이미 이 수업을 신청하셨습니다.
 						</p>
 						<p>
-							현재 상태: {existingApplication.status}. 신청
-							내역에서 취소한 뒤 다시 신청할 수 있습니다.
+							신청 현황에서 취소한 뒤 다시 신청할 수 있습니다.
 						</p>
 						<Link
 							href='/student/applications'
