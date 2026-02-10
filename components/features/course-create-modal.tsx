@@ -41,6 +41,7 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFileName, setSelectedFileName] = useState<string>('선택된 이미지가 없습니다.');
+  const [durationMinutes, setDurationMinutes] = useState<number>(60);
 
   useEffect(() => {
     if (state?.success) {
@@ -124,7 +125,11 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-700">수업 시간(분)</label>
-                  <Select name="duration_minutes" defaultValue="60">
+                  <Select
+                    name="duration_minutes"
+                    value={durationMinutes.toString()}
+                    onChange={(event) => setDurationMinutes(Number(event.target.value))}
+                  >
                     <option value="60">60분</option>
                     <option value="90">90분</option>
                   </Select>
@@ -143,7 +148,7 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
             </CardContent>
           </Card>
 
-          <CourseScheduleFields instructors={instructors} />
+          <CourseScheduleFields instructors={instructors} durationMinutes={durationMinutes} />
 
           <Card className="md:col-span-2">
             <CardHeader>

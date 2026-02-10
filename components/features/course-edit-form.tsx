@@ -195,6 +195,7 @@ export function CourseEditForm({ course, instructors, windows }: Props) {
 
 				<CourseScheduleFields
 					instructors={instructors}
+					durationMinutes={course.duration_minutes}
 					initialWeeks={course.weeks}
 					initialWindows={windows}
 				/>

@@ -14,18 +14,12 @@ const maxDayMinute = 23 * 60 + 59;
 
 interface Props {
 	instructors: InstructorOption[];
+	durationMinutes: number;
 	initialWeeks?: number;
 	initialWindows?: EditableTimeWindow[];
 }
 
 type TimeWindowField = EditableTimeWindow & { clientId: string };
-
-const parseTimeToMinutes = (time: string) => {
-	const [hour, minute] = time.split(':').map(Number);
-	if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
-	if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-	return hour * 60 + minute;
-};
 
 const formatMinutesToTime = (minutes: number) => {
 	const hour = Math.floor(minutes / 60)
@@ -37,6 +31,7 @@ const formatMinutesToTime = (minutes: number) => {
 
 export function CourseScheduleFields({
 	instructors,
+	durationMinutes,
 	initialWeeks,
 	initialWindows,
 }: Props) {
@@ -98,21 +93,9 @@ export function CourseScheduleFields({
 			if (!prev.length) return prev;
 
 			const baseWindow = prev[prev.length - 1];
-			if (!baseWindow.start_time || !baseWindow.end_time) {
-				alert('전체 시간을 추가하려면 마지막 시간의 시작/종료를 먼저 입력해주세요.');
-				return prev;
-			}
 
-			const startMinutes = parseTimeToMinutes(baseWindow.start_time);
-			const endMinutes = parseTimeToMinutes(baseWindow.end_time);
-			if (startMinutes === null || endMinutes === null) {
-				alert('시간 형식이 올바르지 않습니다. 다시 입력해주세요.');
-				return prev;
-			}
-
-			const durationMinutes = endMinutes - startMinutes;
-			if (durationMinutes <= 0) {
-				alert('종료 시간은 시작 시간보다 늦어야 합니다.');
+			if (![60, 90].includes(durationMinutes)) {
+				alert('수업 시간(분)에서 60분 또는 90분을 선택해주세요.');
 				return prev;
 			}
 
