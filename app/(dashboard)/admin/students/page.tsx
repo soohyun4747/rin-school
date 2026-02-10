@@ -16,6 +16,7 @@ type StudentProfile = {
 	kakao_id: string | null;
 	country: string | null;
 	guardian_name: string | null;
+	student_course: string | null;
 	created_at: string;
 };
 
@@ -25,6 +26,20 @@ type SortableField =
 	| 'country'
 	| 'created_at'
 	| 'guardian_name';
+
+
+const formatStudentCourse = (studentCourse: string | null) => {
+	switch (studentCourse) {
+		case 'international_school':
+			return '국제학교';
+		case 'local_school':
+			return '현지학교';
+		case 'homeschool':
+			return '홈스쿨';
+		default:
+			return '미입력';
+	}
+};
 
 export default async function AdminStudentsPage({
 	searchParams,
@@ -78,7 +93,7 @@ export default async function AdminStudentsPage({
 	let query = supabase
 		.from('profiles')
 		.select(
-			'id, username, name, email, phone, birthdate, kakao_id, country, guardian_name, created_at',
+			'id, username, name, email, phone, birthdate, kakao_id, country, guardian_name, student_course, created_at',
 			{ count: 'exact' }
 		)
 		.eq('role', 'student')
@@ -216,6 +231,9 @@ export default async function AdminStudentsPage({
 												'guardian_name'
 											)}
 										</th>
+										<th className='px-4 py-2 text-left text-xs font-semibold text-slate-600'>
+											재학코스
+										</th>
 										<th className='px-4 py-2 text-left'>
 											{renderSortLabel(
 												'가입일',
@@ -267,6 +285,9 @@ export default async function AdminStudentsPage({
 												<td className='px-4 py-2 text-slate-700'>
 													{student.guardian_name ??
 														'미입력'}
+												</td>
+												<td className='px-4 py-2 text-slate-700'>
+													{formatStudentCourse(student.student_course)}
 												</td>
 												<td className='px-4 py-2 text-slate-500'>
 													{formatDateTime(

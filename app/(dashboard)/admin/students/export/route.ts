@@ -12,6 +12,7 @@ type StudentExportRow = {
 	kakao_id: string | null;
 	country: string | null;
 	guardian_name: string | null;
+	student_course: string | null;
 	created_at: string;
 };
 
@@ -26,6 +27,20 @@ const excelXmlEscape = (value: string) =>
 const buildCell = (value: string) =>
 	`<Cell><Data ss:Type="String">${excelXmlEscape(value)}</Data></Cell>`;
 
+
+const formatStudentCourse = (studentCourse: string | null) => {
+	switch (studentCourse) {
+		case 'international_school':
+			return '국제학교';
+		case 'local_school':
+			return '현지학교';
+		case 'homeschool':
+			return '홈스쿨';
+		default:
+			return '미입력';
+	}
+};
+
 const buildExcelXml = (rows: StudentExportRow[]) => {
 	const headerCells = [
 		'이름',
@@ -36,6 +51,7 @@ const buildExcelXml = (rows: StudentExportRow[]) => {
 		'카카오톡 ID',
 		'거주지',
 		'학부모 이름',
+		'재학코스',
 		'가입일',
 	].map(buildCell);
 
@@ -50,6 +66,7 @@ const buildExcelXml = (rows: StudentExportRow[]) => {
 				student.kakao_id || '미입력',
 				student.country || '미입력',
 				student.guardian_name || '미입력',
+				formatStudentCourse(student.student_course),
 				student.created_at,
 			];
 
@@ -83,7 +100,7 @@ const getAllStudents = async () => {
 		const { data, error } = await supabase
 			.from('profiles')
 			.select(
-				'username, name, email, phone, birthdate, kakao_id, country, guardian_name, created_at'
+				'username, name, email, phone, birthdate, kakao_id, country, guardian_name, student_course, created_at'
 			)
 			.eq('role', 'student')
 			.order('created_at', { ascending: false })
