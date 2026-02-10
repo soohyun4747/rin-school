@@ -44,6 +44,13 @@ type TimeChoiceRow = {
 	} | null;
 };
 
+type TimeRequestRow = {
+	application_id: string;
+	day_of_week: number;
+	start_time: string;
+	end_time: string;
+};
+
 const EXCEL_HEADERS = [
 	'학생 이름',
 	'이메일',
@@ -57,7 +64,8 @@ const EXCEL_HEADERS = [
 	'거주국가',
 	'신청일자',
 	'재학코스',
-	'가능한 시간대',
+	'선택한 시간대',
+	'신청한 시간대',
 ];
 
 function escapeXml(value: string) {
@@ -196,6 +204,16 @@ export async function GET() {
 		return NextResponse.json({ error: '신청 시간대 조회에 실패했습니다.' }, { status: 500 });
 	}
 
+	const { data: timeRequests, error: timeRequestsError } = await supabase
+		.from('application_time_requests')
+		.select('application_id, day_of_week, start_time, end_time')
+		.in('application_id', applicationIds.length > 0 ? applicationIds : ['']);
+
+	if (timeRequestsError) {
+		console.error(timeRequestsError);
+		return NextResponse.json({ error: '신청 시간대 조회에 실패했습니다.' }, { status: 500 });
+	}
+
 	const profileMap = new Map((profiles ?? []).map((item) => [item.id, item as ProfileRow]));
 	const courseMap = new Map(courses.map((course) => [course.id, course]));
 
@@ -217,6 +235,14 @@ export async function GET() {
 		const slots = availableTimeMap.get(choice.application_id) ?? [];
 		slots.push(label);
 		availableTimeMap.set(choice.application_id, slots);
+	});
+
+	const requestedTimeMap = new Map<string, string[]>();
+	((timeRequests ?? []) as TimeRequestRow[]).forEach((request) => {
+		const label = formatAvailableWindow(request);
+		const slots = requestedTimeMap.get(request.application_id) ?? [];
+		slots.push(label);
+		requestedTimeMap.set(request.application_id, slots);
 	});
 
 	const applicationsByCategory = new Map<CourseCategory, { course: CourseRow; app: ApplicationRow }[]>();
@@ -242,7 +268,8 @@ export async function GET() {
 					const student = profileMap.get(app.student_id);
 					const matchKey = `${course.id}:${app.student_id}`;
 					const matchedSlots = [...new Set(matchTimeMap.get(matchKey) ?? [])];
-					const availableTimes = [...new Set(availableTimeMap.get(app.id) ?? [])];
+					const selectedTimes = [...new Set(availableTimeMap.get(app.id) ?? [])];
+					const requestedTimes = [...new Set(requestedTimeMap.get(app.id) ?? [])];
 					const cells = [
 						student?.name ?? '',
 						student?.email ?? '',
@@ -256,7 +283,8 @@ export async function GET() {
 						student?.country ?? '',
 						formatDate(app.created_at),
 						student?.student_course ?? '',
-						availableTimes.join(', '),
+						selectedTimes.join(', '),
+						requestedTimes.join(', '),
 					];
 					return `<Row>${cells.map((cell) => excelCell(cell)).join('')}</Row>`;
 				}),
