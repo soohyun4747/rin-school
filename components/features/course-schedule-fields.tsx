@@ -1,14 +1,16 @@
 'use client';
 
 import { useId, useMemo, useState } from 'react';
+import { nanoid } from 'nanoid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import type { EditableTimeWindow, InstructorOption } from './course-form-types';
-import { nanoid } from "nanoid";
 
 const days = ['일', '월', '화', '수', '목', '금', '토'];
 const weekOptions = [1, 2, 3, 4, 6, 8, 12];
+const weekDaysFromMonday = [1, 2, 3, 4, 5, 6, 0];
+const maxDayMinute = 23 * 60 + 59;
 
 interface Props {
 	instructors: InstructorOption[];
@@ -17,6 +19,21 @@ interface Props {
 }
 
 type TimeWindowField = EditableTimeWindow & { clientId: string };
+
+const parseTimeToMinutes = (time: string) => {
+	const [hour, minute] = time.split(':').map(Number);
+	if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+	if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+	return hour * 60 + minute;
+};
+
+const formatMinutesToTime = (minutes: number) => {
+	const hour = Math.floor(minutes / 60)
+		.toString()
+		.padStart(2, '0');
+	const minute = (minutes % 60).toString().padStart(2, '0');
+	return `${hour}:${minute}`;
+};
 
 export function CourseScheduleFields({
 	instructors,
@@ -86,38 +103,51 @@ export function CourseScheduleFields({
 				return prev;
 			}
 
-			const weekDaysFromMonday = [1, 2, 3, 4, 5, 6, 0];
-			const exists = (dayOfWeek: number) =>
-				prev.some(
-					(window) =>
-						window.day_of_week === dayOfWeek &&
-						window.start_time === baseWindow.start_time &&
-						window.end_time === baseWindow.end_time &&
-						(window.instructor_id ?? '') ===
-							(baseWindow.instructor_id ?? '') &&
-						(window.instructor_name ?? '') ===
-							(baseWindow.instructor_name ?? '')
-				);
-
-			const missingDays = weekDaysFromMonday.filter(
-				(dayOfWeek) => !exists(dayOfWeek)
-			);
-
-			if (!missingDays.length) {
-				alert('이미 월요일부터 일요일까지 전체 시간이 추가되어 있습니다.');
+			const startMinutes = parseTimeToMinutes(baseWindow.start_time);
+			const endMinutes = parseTimeToMinutes(baseWindow.end_time);
+			if (startMinutes === null || endMinutes === null) {
+				alert('시간 형식이 올바르지 않습니다. 다시 입력해주세요.');
 				return prev;
 			}
 
-			const nextWindows = missingDays.map((dayOfWeek) => ({
-				clientId: `${idPrefix}-${nanoid()}`,
-				day_of_week: dayOfWeek,
-				start_time: baseWindow.start_time,
-				end_time: baseWindow.end_time,
-				instructor_id: baseWindow.instructor_id,
-				instructor_name: baseWindow.instructor_name,
-			}));
+			const durationMinutes = endMinutes - startMinutes;
+			if (durationMinutes <= 0) {
+				alert('종료 시간은 시작 시간보다 늦어야 합니다.');
+				return prev;
+			}
 
-			return [...prev, ...nextWindows];
+			if (prev.length > 0) {
+				const ok = confirm(
+					'기존 등록된 시간을 모두 삭제하고 월요일부터 일요일까지 전체 시간 슬롯을 추가할까요?'
+				);
+				if (!ok) return prev;
+			}
+
+			const slotsForOneDay: Array<{ start_time: string; end_time: string }> = [];
+			for (let slotStart = 0; slotStart + durationMinutes <= maxDayMinute; slotStart += durationMinutes) {
+				slotsForOneDay.push({
+					start_time: formatMinutesToTime(slotStart),
+					end_time: formatMinutesToTime(slotStart + durationMinutes),
+				});
+			}
+
+			const nextWindows: TimeWindowField[] = weekDaysFromMonday.flatMap((dayOfWeek) =>
+				slotsForOneDay.map((slot) => ({
+					clientId: `${idPrefix}-${nanoid()}`,
+					day_of_week: dayOfWeek,
+					start_time: slot.start_time,
+					end_time: slot.end_time,
+					instructor_id: baseWindow.instructor_id,
+					instructor_name: baseWindow.instructor_name,
+				}))
+			);
+
+			if (!nextWindows.length) {
+				alert('입력한 수업 시간 간격으로 생성할 수 있는 슬롯이 없습니다.');
+				return prev;
+			}
+
+			return nextWindows;
 		});
 	};
 
