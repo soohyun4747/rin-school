@@ -161,7 +161,7 @@ export default async function AdminStudentsPage({
 							학생 기본 정보와 연락처를 확인하고 검색할 수 있습니다.
 						</p>
 					</div>
-					<Button aschild='true' variant='outline' className='min-w-max'>
+					<Button aschild='true' variant='primary' className='min-w-max'>
 						<Link href='/admin/students/export' prefetch={false}>
 							엑셀 다운로드
 						</Link>
@@ -194,7 +194,7 @@ export default async function AdminStudentsPage({
 						</p>
 					)}
 					{studentRows.length > 0 && (
-						<div className='md:overflow-hidden overflow-x-auto rounded-lg border border-slate-200'>
+						<div className='overflow-x-auto rounded-lg border border-slate-200'>
 							<table className='min-w-full divide-y divide-slate-200 text-sm'>
 								<thead className='bg-slate-50'>
 									<tr>
@@ -251,7 +251,7 @@ export default async function AdminStudentsPage({
 											<tr
 												key={student.id}
 												className='hover:bg-slate-50'>
-												<td className='px-4 py-2 font-semibold text-slate-900'>
+												<td className='px-4 py-2 font-semibold text-slate-900 min-w-[80px]'>
 													<Link
 														href={`/admin/students/${student.id}`}
 														className='hover:underline'>
@@ -286,7 +286,7 @@ export default async function AdminStudentsPage({
 													{student.guardian_name ??
 														'미입력'}
 												</td>
-												<td className='px-4 py-2 text-slate-700'>
+												<td className='px-4 py-2 text-slate-700 min-w-[100px]'>
 													{formatStudentCourse(student.student_course)}
 												</td>
 												<td className='px-4 py-2 text-slate-500'>
