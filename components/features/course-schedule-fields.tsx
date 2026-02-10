@@ -113,6 +113,7 @@ export function CourseScheduleFields({
 					end_time: formatMinutesToTime(slotStart + durationMinutes),
 				});
 			}
+			console.log({slotsForOneDay, durationMinutes, maxDayMinute});
 
 			const nextWindows: TimeWindowField[] = weekDaysFromMonday.flatMap((dayOfWeek) =>
 				slotsForOneDay.map((slot) => ({
