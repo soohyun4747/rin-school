@@ -41,7 +41,7 @@ export default async function LandingAdminPage() {
         <div className="rounded-2xl border border-[var(--primary-border)] bg-white p-4 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">새 이미지 업로드 (데스크톱)</h2>
           <p className="text-sm text-slate-600">업로드할 때마다 목록의 마지막에 추가됩니다.</p>
-          <p className="text-xs text-slate-500">권장 최소 사이즈: 1920 x 1080px</p>
+          <p className="text-xs text-slate-500">권장 최소 가로 사이즈: 1200px</p>
           <form action={uploadLandingImage} className="mt-4 space-y-3">
             <input type="hidden" name="variant" value="desktop" />
             <div className="space-y-1">
@@ -75,7 +75,7 @@ export default async function LandingAdminPage() {
         <div className="rounded-2xl border border-[var(--primary-border)] bg-white p-4 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">새 이미지 업로드 (모바일)</h2>
           <p className="text-sm text-slate-600">업로드할 때마다 목록의 마지막에 추가됩니다.</p>
-          <p className="text-xs text-slate-500">권장 최소 사이즈: 1080 x 1440px</p>
+          <p className="text-xs text-slate-500">권장 최소 가로 사이즈: 750px</p>
           <form action={uploadLandingImage} className="mt-4 space-y-3">
             <input type="hidden" name="variant" value="mobile" />
             <div className="space-y-1">
