@@ -137,10 +137,21 @@ export default async function AdminStudentsPage({
 	return (
 		<div className='space-y-6'>
 			<div className='space-y-2'>
-				<h1 className='text-2xl font-bold text-slate-900'>학생 관리</h1>
-				<p className='text-sm text-slate-600'>
-					학생 기본 정보와 연락처를 확인하고 검색할 수 있습니다.
-				</p>
+				<div className='flex flex-wrap items-start justify-between gap-3'>
+					<div>
+						<h1 className='text-2xl font-bold text-slate-900'>
+							학생 관리
+						</h1>
+						<p className='text-sm text-slate-600'>
+							학생 기본 정보와 연락처를 확인하고 검색할 수 있습니다.
+						</p>
+					</div>
+					<Button aschild='true' variant='outline' className='min-w-max'>
+						<Link href='/admin/students/export' prefetch={false}>
+							엑셀 다운로드
+						</Link>
+					</Button>
+				</div>
 				<form className='flex max-w-md items-center gap-2'>
 					<input
 						type='text'
