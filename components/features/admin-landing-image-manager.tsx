@@ -34,20 +34,32 @@ export function AdminLandingImageManager({
 }: Props) {
 	const [orderedImages, setOrderedImages] = useState(images);
 	const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+	const [savedPathOrder, setSavedPathOrder] = useState(() =>
+		images.map((item) => item.path).join('|'),
+	);
 
 	useEffect(() => {
-		setOrderedImages(images);
+		const incomingPaths = images.map((item) => item.path);
+		const currentPaths = orderedImages.map((item) => item.path);
+		const incomingSet = new Set(incomingPaths);
+		const hasSameImageSet =
+			incomingPaths.length === currentPaths.length &&
+			currentPaths.every((path) => incomingSet.has(path));
+
+		if (!hasSameImageSet) {
+			setOrderedImages(images);
+			setSavedPathOrder(incomingPaths.join('|'));
+		}
+		// same image set(순서만 다른 경우)에서는 로컬 정렬 상태를 유지합니다.
+		// 서버 응답 지연으로 이전 순서가 내려와도 즉시 되돌아가는 현상을 막습니다.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [images]);
 
-	const initialPathOrder = useMemo(
-		() => images.map((item) => item.path).join('|'),
-		[images],
-	);
 	const currentPathOrder = useMemo(
 		() => orderedImages.map((item) => item.path).join('|'),
 		[orderedImages],
 	);
-	const hasOrderChanged = initialPathOrder !== currentPathOrder;
+	const hasOrderChanged = savedPathOrder !== currentPathOrder;
 
 	const handleDrop = (targetIndex: number) => {
 		if (draggingIndex === null || draggingIndex === targetIndex) {
@@ -71,7 +83,25 @@ export function AdminLandingImageManager({
 						버튼을 눌러주세요.
 					</p>
 					<form
-						action={reorderAction}
+						action={async (formData) => {
+							await reorderAction(formData);
+							const submittedOrderedPaths = formData.get('orderedPaths');
+							if (typeof submittedOrderedPaths === 'string') {
+								try {
+									const parsed = JSON.parse(
+										submittedOrderedPaths,
+									) as unknown;
+									if (
+										Array.isArray(parsed) &&
+										parsed.every((item) => typeof item === 'string')
+									) {
+										setSavedPathOrder(parsed.join('|'));
+									}
+								} catch {
+									// no-op
+								}
+							}
+						}}
 						className='space-y-2'>
 						<input
 							type='hidden'
