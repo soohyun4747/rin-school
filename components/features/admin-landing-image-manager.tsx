@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import type { LandingImage } from '@/lib/landing';
 import { ConfirmSubmitButton } from '@/components/ui/confirm-submit-button';
@@ -34,6 +34,10 @@ export function AdminLandingImageManager({
 }: Props) {
 	const [orderedImages, setOrderedImages] = useState(images);
 	const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+
+	useEffect(() => {
+		setOrderedImages(images);
+	}, [images]);
 
 	const initialPathOrder = useMemo(
 		() => images.map((item) => item.path).join('|'),
