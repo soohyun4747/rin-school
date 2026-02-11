@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from 'next/cache';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 
 export type LandingImage = {
@@ -47,6 +48,7 @@ async function fetchLandingMetadata(
 async function fetchLandingVariantImages(
 	variant: LandingVariant,
 ): Promise<LandingImage[]> {
+	noStore();
 	const hasSupabaseEnv =
 		process.env.NEXT_PUBLIC_SUPABASE_URL &&
 		process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
