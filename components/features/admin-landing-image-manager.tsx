@@ -85,7 +85,8 @@ export function AdminLandingImageManager({
 					<form
 						action={async (formData) => {
 							await reorderAction(formData);
-							const submittedOrderedPaths = formData.get('orderedPaths');
+							const submittedOrderedPaths =
+								formData.get('orderedPaths');
 							if (typeof submittedOrderedPaths === 'string') {
 								try {
 									const parsed = JSON.parse(
@@ -93,7 +94,9 @@ export function AdminLandingImageManager({
 									) as unknown;
 									if (
 										Array.isArray(parsed) &&
-										parsed.every((item) => typeof item === 'string')
+										parsed.every(
+											(item) => typeof item === 'string',
+										)
 									) {
 										setSavedPathOrder(parsed.join('|'));
 									}
@@ -116,6 +119,7 @@ export function AdminLandingImageManager({
 							)}
 						/>
 						<Button
+							className='cursor-pointer'
 							type='submit'
 							size='sm'
 							disabled={!hasOrderChanged}>
