@@ -7,6 +7,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { safeUUID } from '@/lib/auth';
 
 const roles = [
 	{ value: 'student', label: '학생' },
@@ -194,7 +195,7 @@ export default function SignupPage() {
 		setMessage(null);
 
 		try {
-			const guardianToken = crypto.randomUUID();
+			const guardianToken = safeUUID();
 			const trimmedUsername = username.trim();
 			const trimmedEmail = email.trim();
 			const trimmedPhone = phone.trim();
@@ -266,22 +267,53 @@ export default function SignupPage() {
 			}
 
 			const userId = signUpData.user?.id;
+			// if (!ageConfirmed && trimmedGuardianEmail && userId) {
+			// 	const baseUrl =
+			// 		process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+			// 	const confirmUrl = `${baseUrl}/api/guardian-consent?user_id=${encodeURIComponent(
+			// 		userId,
+			// 	)}&token=${encodeURIComponent(guardianToken)}`;
+			// 	await fetch('/api/send-guardian-email', {
+			// 		method: 'POST',
+			// 		headers: { 'Content-Type': 'application/json' },
+			// 		body: JSON.stringify({
+			// 			guardianEmail: trimmedGuardianEmail,
+			// 			studentName: name,
+			// 			confirmUrl,
+			// 		}),
+			// 	});
+			// }
 			if (!ageConfirmed && trimmedGuardianEmail && userId) {
-				const baseUrl =
-					process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-				const confirmUrl = `${baseUrl}/api/guardian-consent?user_id=${encodeURIComponent(
-					userId,
-				)}&token=${encodeURIComponent(guardianToken)}`;
-				await fetch('/api/send-guardian-email', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						guardianEmail: trimmedGuardianEmail,
-						studentName: name,
-						confirmUrl,
-					}),
-				});
+				try {
+					const baseUrl =
+						process.env.NEXT_PUBLIC_APP_URL ||
+						window.location.origin;
+					const confirmUrl = `${baseUrl}/api/guardian-consent?user_id=${encodeURIComponent(userId)}&token=${encodeURIComponent(guardianToken)}`;
+
+					const res = await fetch('/api/send-guardian-email', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							guardianEmail: trimmedGuardianEmail,
+							studentName: name,
+							confirmUrl,
+						}),
+					});
+
+					if (!res.ok) {
+						// 회원가입은 성공. 이메일만 실패 처리(로그만 남기고 사용자에겐 안내)
+						console.error(
+							'send-guardian-email failed:',
+							await res.text(),
+						);
+						// 원하시면 setMessage에 “회원가입 완료, 보호자 이메일 발송 실패…” 안내 추가
+					}
+				} catch (e) {
+					console.error('send-guardian-email network error:', e);
+					// 회원가입은 성공 처리 유지
+				}
 			}
+
 			setMessage('회원가입이 완료되었습니다.');
 			router.push('/auth/login');
 		} catch (err) {
