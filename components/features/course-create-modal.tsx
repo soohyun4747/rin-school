@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChangeEvent, FormEvent } from "react";
+import type { ChangeEvent, Dispatch, FormEvent, SetStateAction } from "react";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createCourse } from "@/app/actions/admin";
@@ -17,9 +17,17 @@ interface Props {
   instructors: InstructorOption[];
 }
 
+interface FormDraftValues {
+  durationMinutes: number | null;
+  weeks: number | null;
+}
+
 export function CourseCreateModal({ instructors }: Props) {
   const [open, setOpen] = useState(false);
-
+  const [draftValues, setDraftValues] = useState<FormDraftValues>({
+    durationMinutes: null,
+    weeks: null,
+  });
 
   return (
     <>
@@ -28,14 +36,28 @@ export function CourseCreateModal({ instructors }: Props) {
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="absolute inset-0" onClick={() => setOpen(false)} aria-hidden="true" />
-          <CourseCreateForm instructors={instructors} onClose={() => setOpen(false)} />
+          <CourseCreateForm
+            instructors={instructors}
+            onClose={() => setOpen(false)}
+            draftValues={draftValues}
+            setDraftValues={setDraftValues}
+          />
         </div>
       )}
     </>
   );
 }
 
-function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => void }) {
+function CourseCreateForm({
+  instructors,
+  onClose,
+  draftValues,
+  setDraftValues,
+}: Props & {
+  onClose: () => void;
+  draftValues: FormDraftValues;
+  setDraftValues: Dispatch<SetStateAction<FormDraftValues>>;
+}) {
   const initialState = {
     success: false,
     error: undefined as string | undefined,
@@ -46,17 +68,13 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFileName, setSelectedFileName] = useState<string>('선택된 이미지가 없습니다.');
-  const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
   const [subject, setSubject] = useState<string | null>(null);
-  const [weeks, setWeeks] = useState<number | null>(null);
-  const [submittedDuration, setSubmittedDuration] = useState<number | null>(null);
-  const [submittedWeeks, setSubmittedWeeks] = useState<number | null>(null);
 
   const formValues = state?.formValues;
   const effectiveDuration =
-    durationMinutes ?? submittedDuration ?? formValues?.duration_minutes ?? 60;
+    draftValues.durationMinutes ?? formValues?.duration_minutes ?? 60;
   const effectiveSubject = subject ?? formValues?.subject ?? '';
-  const effectiveWeeks = weeks ?? submittedWeeks ?? formValues?.weeks;
+  const effectiveWeeks = draftValues.weeks ?? formValues?.weeks;
 
   useEffect(() => {
     if (state?.success) {
@@ -79,8 +97,11 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
     const duration = Number(data.get('duration_minutes') ?? 60);
     const weeksValue = Number(data.get('weeks') ?? 1);
 
-    setSubmittedDuration(Number.isNaN(duration) ? 60 : duration);
-    setSubmittedWeeks(Number.isNaN(weeksValue) ? 1 : weeksValue);
+    setDraftValues((prev) => ({
+      ...prev,
+      durationMinutes: Number.isNaN(duration) ? 60 : duration,
+      weeks: Number.isNaN(weeksValue) ? 1 : weeksValue,
+    }));
   };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -178,7 +199,12 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
                   <Select
                     name="duration_minutes"
                     value={String(effectiveDuration)}
-                    onChange={(event) => setDurationMinutes(Number(event.target.value))}
+                    onChange={(event) =>
+                      setDraftValues((prev) => ({
+                        ...prev,
+                        durationMinutes: Number(event.target.value),
+                      }))
+                    }
                   >
                     <option value="60">60분</option>
                     <option value="90">90분</option>
@@ -203,7 +229,9 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
             instructors={instructors}
             durationMinutes={effectiveDuration}
             weeksValue={effectiveWeeks}
-            onWeeksChange={setWeeks}
+            onWeeksChange={(value) =>
+              setDraftValues((prev) => ({ ...prev, weeks: value }))
+            }
             initialWeeks={formValues?.weeks}
             initialWindows={formValues?.time_windows}
           />
