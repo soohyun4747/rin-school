@@ -28,6 +28,7 @@ alter table public.email_batches enable row level security;
 alter table public.matching_runs enable row level security;
 alter table public.user_consents enable row level security;
 alter table public.admin_notification_emails enable row level security;
+alter table public.signup_error_logs enable row level security;
 
 -- Profiles
 create policy "profiles_self_access" on public.profiles
@@ -101,4 +102,8 @@ create policy "user_consents_owner" on public.user_consents
 
 -- Admin notification emails
 create policy "admin_notification_emails_admin" on public.admin_notification_emails
+  using (public.is_admin()) with check (public.is_admin());
+
+
+create policy "signup_error_logs_admin" on public.signup_error_logs
   using (public.is_admin()) with check (public.is_admin());

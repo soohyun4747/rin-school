@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { requireSession, requireRole } from '@/lib/auth';
+import { getSessionAndProfile } from '@/lib/auth';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { ICourse } from '@/app/(dashboard)/admin/courses/page';
 import { applyToCourse } from '@/app/actions/student';
@@ -20,12 +20,11 @@ export default async function StudentCourseDetail({
 }: {
 	params: Promise<{ id: string }>;
 }) {
-	const { profile } = await requireSession();
-	requireRole(profile.role, ['student', 'instructor', 'admin']);
+	const { profile } = await getSessionAndProfile();
 
 	const { id } = await params;
 
-	const isStudent = profile.role === 'student';
+	const isStudent = profile?.role === 'student';
 	const supabase = await getSupabaseServerClient();
 
 	const { data } = await supabase
@@ -309,6 +308,54 @@ export default async function StudentCourseDetail({
 									)}
 								</div>
 							)}
+						</CardContent>
+					</Card>
+				) : !profile ? (
+					<Card>
+						<CardHeader>
+							<CardTitle>신청 시간 확인</CardTitle>
+						</CardHeader>
+						<CardContent className='space-y-3 text-sm'>
+							<p className='text-slate-700'>
+								로그인 없이도 수업 시간 정보를 확인할 수 있습니다.
+							</p>
+							<p className='text-slate-700'>
+								신청은 학생 로그인 후 가능합니다.
+							</p>
+							<Link
+								href='/auth/login'
+								className='inline-flex items-center rounded-md border border-[var(--primary-border)] px-3 py-2 font-semibold text-[var(--primary)] hover:bg-[var(--primary-soft)]'>
+								로그인하러 가기
+							</Link>
+							{slotGroups.length === 0 && (
+								<p className='text-slate-600'>등록된 시간이 없습니다.</p>
+							)}
+							{slotGroups.map(({ dayIndex, slots }) => (
+								<div
+									key={dayIndex}
+									className='space-y-2 rounded-lg border border-slate-200 p-3'>
+									<p className='text-sm font-semibold text-slate-800'>
+										{days[dayIndex]}
+									</p>
+									<div className='space-y-2'>
+										{slots.map((slot) => (
+											<div
+												key={slot.value}
+												className='flex items-center justify-between rounded-md border border-slate-100 px-3 py-2 text-sm'>
+												<div>
+													<p className='font-semibold text-slate-900'>
+														{slot.start_time} - {slot.end_time}
+													</p>
+													<p className='text-xs text-slate-600'>
+														강사: {slot.instructor_label} · 정원 {course.capacity}
+														명
+													</p>
+												</div>
+											</div>
+										))}
+									</div>
+								</div>
+							))}
 						</CardContent>
 					</Card>
 				) : (

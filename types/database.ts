@@ -275,6 +275,29 @@ export interface Database {
         };
         Update: Partial<Omit<Database["public"]["Tables"]["admin_notification_emails"]["Row"], "id" | "created_at">>;
       };
+      signup_error_logs: {
+        Row: {
+          id: string;
+          context: string;
+          email: string | null;
+          username: string | null;
+          error_message: string;
+          error_code: string | null;
+          error_payload: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          context?: string;
+          email?: string | null;
+          username?: string | null;
+          error_message: string;
+          error_code?: string | null;
+          error_payload?: Json | null;
+          created_at?: string;
+        };
+        Update: Partial<Omit<Database["public"]["Tables"]["signup_error_logs"]["Row"], "id" | "created_at">>;
+      };
       matching_runs: {
         Row: {
           id: string;

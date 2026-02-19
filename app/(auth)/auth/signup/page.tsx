@@ -188,6 +188,29 @@ export default function SignupPage() {
 	const [error, setError] = useState<string | null>(null);
 	const router = useRouter();
 
+	const persistSignupError = async (
+		errorMessage: string,
+		errorCode?: string,
+		errorPayload?: unknown,
+	) => {
+		try {
+			await fetch('/api/signup-error-log', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					context: 'signup_handle_submit',
+					email: email.trim() || null,
+					username: username.trim() || null,
+					error_message: errorMessage,
+					error_code: errorCode ?? null,
+					error_payload: errorPayload ?? null,
+				}),
+			});
+		} catch (loggingError) {
+			console.error('signup error logging failed:', loggingError);
+		}
+	};
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setIsSubmitting(true);
@@ -265,6 +288,11 @@ export default function SignupPage() {
 
 			if (signUpError) {
 				console.error({ signUpError });
+				await persistSignupError(
+					signUpError.message,
+					signUpError.code,
+					signUpError,
+				);
 				setError(signUpError.message);
 				return;
 			}
@@ -321,6 +349,11 @@ export default function SignupPage() {
 			router.push('/auth/login');
 		} catch (err) {
 			console.error(err);
+			const unexpectedErrorMessage =
+				err instanceof Error
+					? err.message
+					: '회원가입 처리 중 오류가 발생했습니다.';
+			await persistSignupError(unexpectedErrorMessage, undefined, err);
 			setError(
 				'회원가입 처리 중 오류가 발생했습니다. 다시 시도해주세요.',
 			);

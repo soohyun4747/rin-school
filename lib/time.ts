@@ -42,7 +42,15 @@ export function splitWindowByDuration<
 	}
 
 	const total = endMinutes - startMinutes;
+	const isOneHourAlmostFullRange =
+		durationMinutes === 60 &&
+		total === 59 &&
+		startMinutes % 60 === 0 &&
+		endMinutes % 60 === 59;
 	if (total < durationMinutes) {
+		if (isOneHourAlmostFullRange) {
+			return [window];
+		}
 		throw new Error('수업 길이보다 긴 시간 범위를 입력해주세요.');
 	}
 	if (total % durationMinutes !== 0) {

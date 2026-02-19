@@ -36,6 +36,17 @@ create table if not exists admin_notification_emails (
   created_at timestamptz not null default now()
 );
 
+create table if not exists signup_error_logs (
+  id uuid primary key default gen_random_uuid(),
+  context text not null default 'signup_handle_submit',
+  email text,
+  username text,
+  error_message text not null,
+  error_code text,
+  error_payload jsonb,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists courses (
   id uuid primary key default uuid_generate_v4(),
   title text not null,
