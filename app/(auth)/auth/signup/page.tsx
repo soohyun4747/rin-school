@@ -195,11 +195,11 @@ export default function SignupPage() {
 		setMessage(null);
 
 		try {
-			const guardianToken = safeUUID();
+			// const guardianToken = safeUUID();
 			const trimmedUsername = username.trim();
 			const trimmedEmail = email.trim();
 			const trimmedPhone = phone.trim();
-			const trimmedGuardianEmail = guardianEmail.trim();
+			// const trimmedGuardianEmail = guardianEmail.trim();
 			const trimmedGuardianName = guardianName.trim();
 			const trimmedStudentCourse = studentCourse.trim();
 			const supabase = getSupabaseBrowserClient();
@@ -219,10 +219,10 @@ export default function SignupPage() {
 				return;
 			}
 
-			if (!ageConfirmed && !trimmedGuardianEmail) {
-				setError('14세 미만인 경우 보호자 이메일을 입력해야 합니다.');
-				return;
-			}
+			// if (!ageConfirmed && !trimmedGuardianEmail) {
+			// 	setError('14세 미만인 경우 보호자 이메일을 입력해야 합니다.');
+			// 	return;
+			// }
 
 			if (role === 'student' && !trimmedStudentCourse) {
 				setError('학생인 경우 재학코스를 선택해주세요.');
@@ -249,13 +249,16 @@ export default function SignupPage() {
 									? trimmedStudentCourse
 									: null,
 							age_confirmed: ageConfirmed,
-							guardian_email: ageConfirmed
-								? null
-								: trimmedGuardianEmail,
-							guardian_status: ageConfirmed
-								? 'not_required'
-								: 'pending',
-							guardian_token: ageConfirmed ? null : guardianToken,
+							guardian_eamil: null,
+							guardian_status: 'not_required',
+							guardian_token: null
+							// guardian_email: ageConfirmed
+							// 	? null
+							// 	: trimmedGuardianEmail,
+							// guardian_status: ageConfirmed
+							// 	? 'not_required'
+							// 	: 'pending',
+							// guardian_token: ageConfirmed ? null : guardianToken,
 						},
 					},
 				});
@@ -266,7 +269,7 @@ export default function SignupPage() {
 				return;
 			}
 
-			const userId = signUpData.user?.id;
+			// const userId = signUpData.user?.id;
 			// if (!ageConfirmed && trimmedGuardianEmail && userId) {
 			// 	const baseUrl =
 			// 		process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
@@ -283,36 +286,36 @@ export default function SignupPage() {
 			// 		}),
 			// 	});
 			// }
-			if (!ageConfirmed && trimmedGuardianEmail && userId) {
-				try {
-					const baseUrl =
-						process.env.NEXT_PUBLIC_APP_URL ||
-						window.location.origin;
-					const confirmUrl = `${baseUrl}/api/guardian-consent?user_id=${encodeURIComponent(userId)}&token=${encodeURIComponent(guardianToken)}`;
+			// if (!ageConfirmed && trimmedGuardianEmail && userId) {
+			// 	try {
+			// 		const baseUrl =
+			// 			process.env.NEXT_PUBLIC_APP_URL ||
+			// 			window.location.origin;
+			// 		const confirmUrl = `${baseUrl}/api/guardian-consent?user_id=${encodeURIComponent(userId)}&token=${encodeURIComponent(guardianToken)}`;
 
-					const res = await fetch('/api/send-guardian-email', {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({
-							guardianEmail: trimmedGuardianEmail,
-							studentName: name,
-							confirmUrl,
-						}),
-					});
+			// 		const res = await fetch('/api/send-guardian-email', {
+			// 			method: 'POST',
+			// 			headers: { 'Content-Type': 'application/json' },
+			// 			body: JSON.stringify({
+			// 				guardianEmail: trimmedGuardianEmail,
+			// 				studentName: name,
+			// 				confirmUrl,
+			// 			}),
+			// 		});
 
-					if (!res.ok) {
-						// 회원가입은 성공. 이메일만 실패 처리(로그만 남기고 사용자에겐 안내)
-						console.error(
-							'send-guardian-email failed:',
-							await res.text(),
-						);
-						// 원하시면 setMessage에 “회원가입 완료, 보호자 이메일 발송 실패…” 안내 추가
-					}
-				} catch (e) {
-					console.error('send-guardian-email network error:', e);
-					// 회원가입은 성공 처리 유지
-				}
-			}
+			// 		if (!res.ok) {
+			// 			// 회원가입은 성공. 이메일만 실패 처리(로그만 남기고 사용자에겐 안내)
+			// 			console.error(
+			// 				'send-guardian-email failed:',
+			// 				await res.text(),
+			// 			);
+			// 			// 원하시면 setMessage에 “회원가입 완료, 보호자 이메일 발송 실패…” 안내 추가
+			// 		}
+			// 	} catch (e) {
+			// 		console.error('send-guardian-email network error:', e);
+			// 		// 회원가입은 성공 처리 유지
+			// 	}
+			// }
 
 			setMessage('회원가입이 완료되었습니다.');
 			router.push('/auth/login');
@@ -546,7 +549,7 @@ export default function SignupPage() {
 								</pre>
 							</div>
 						</div>
-						<div className='space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3'>
+						{/* <div className='space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3'>
 							<div className='flex flex-col gap-2'>
 								<label className='flex items-center gap-2 text-sm font-semibold text-slate-800'>
 									<input
@@ -580,7 +583,7 @@ export default function SignupPage() {
 									/>
 								</div>
 							)}
-						</div>
+						</div> */}
 						{error && (
 							<p className='text-sm text-red-600'>{error}</p>
 						)}
