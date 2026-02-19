@@ -47,8 +47,13 @@ export function splitWindowByDuration<
 		total === 59 &&
 		startMinutes % 60 === 0 &&
 		endMinutes % 60 === 59;
+	const isNinetyMinutesLateNightRange =
+		durationMinutes === 90 &&
+		total === 89 &&
+		startMinutes % 60 === 30 &&
+		endMinutes % 60 === 59;
 	if (total < durationMinutes) {
-		if (isOneHourAlmostFullRange) {
+		if (isOneHourAlmostFullRange || isNinetyMinutesLateNightRange) {
 			return [window];
 		}
 		throw new Error('수업 길이보다 긴 시간 범위를 입력해주세요.');

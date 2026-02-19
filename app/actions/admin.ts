@@ -141,7 +141,22 @@ async function notifyScheduleConfirmation(
 	}
 }
 
-export type CourseCreationResult = { success: boolean; error?: string };
+type CourseFormSnapshot = {
+	title: string;
+	subject: string;
+	grade_range: string;
+	description: string;
+	capacity: number;
+	duration_minutes: number;
+	weeks: number;
+	time_windows: TimeWindowInput[];
+};
+
+export type CourseCreationResult = {
+	success: boolean;
+	error?: string;
+	formValues?: CourseFormSnapshot;
+};
 export type CourseUpdateResult = { success: boolean; error?: string };
 export type CourseToggleResult = { success: boolean; error?: string };
 
@@ -163,29 +178,40 @@ export async function createCourse(
         const parsedWindows = parseTimeWindows(
                 String(formData.get('time_windows') ?? '')
         );
+	const formValues: CourseFormSnapshot = {
+		title,
+		subject: courseSubject,
+		grade_range: gradeRange,
+		description,
+		capacity,
+		duration_minutes: duration,
+		weeks,
+		time_windows: parsedWindows,
+	};
         const imageFile = formData.get('image');
         let imageUrl: string | null = null;
 
 	if (!title || !courseSubject || !gradeRange) {
-		return { success: false, error: '필수 항목을 모두 입력해주세요.' };
+		return { success: false, error: '필수 항목을 모두 입력해주세요.', formValues };
 	}
 
 	if (!ALLOWED_WEEKS.includes(weeks)) {
-		return { success: false, error: '과정 기간을 올바르게 선택해주세요.' };
+		return { success: false, error: '과정 기간을 올바르게 선택해주세요.', formValues };
 	}
 
 	if (description && description.length > 800) {
-		return { success: false, error: '설명은 800자 이내로 작성해주세요.' };
+		return { success: false, error: '설명은 800자 이내로 작성해주세요.', formValues };
 	}
 
         if (parsedWindows.length === 0) {
-                return { success: false, error: '시간 범위를 1개 이상 추가해주세요.' };
+                return { success: false, error: '시간 범위를 1개 이상 추가해주세요.', formValues };
         }
 
         if (![60, 90].includes(duration)) {
                 return {
                         success: false,
                         error: '수업 시간은 60분 또는 90분만 선택해주세요.',
+                        formValues,
                 };
         }
 
@@ -196,6 +222,7 @@ export async function createCourse(
 		return {
 			success: false,
 			error: (error as Error).message,
+			formValues,
 		};
 	}
 
@@ -221,7 +248,7 @@ export async function createCourse(
 			return slots;
 		});
 	} catch (error) {
-		return { success: false, error: (error as Error).message };
+		return { success: false, error: (error as Error).message, formValues };
 	}
 
 	if (imageFile instanceof File && imageFile.size > 0) {
@@ -229,6 +256,7 @@ export async function createCourse(
 			return {
 				success: false,
 				error: '이미지 파일만 업로드할 수 있습니다.',
+				formValues,
 			};
 		}
 
@@ -251,6 +279,7 @@ export async function createCourse(
 			return {
 				success: false,
 				error: '이미지 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.',
+				formValues,
 			};
 		}
 
@@ -288,7 +317,11 @@ export async function createCourse(
 
 	if (error) {
 		console.error('courses insert error:', error);
-		return { success: false, error: `Insert failed: ${error.message}` };
+		return {
+			success: false,
+			error: `Insert failed: ${error.message}`,
+			formValues,
+		};
 	}
 
 	if (newCourse?.id) {
@@ -312,6 +345,7 @@ export async function createCourse(
 			return {
 				success: false,
 				error: '수업 생성 중 시간이 저장되지 않았습니다. 다시 시도해주세요.',
+				formValues,
 			};
 		}
 

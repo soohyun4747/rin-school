@@ -35,7 +35,11 @@ export function CourseCreateModal({ instructors }: Props) {
 }
 
 function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => void }) {
-  const initialState = { success: false, error: undefined as string | undefined };
+  const initialState = {
+    success: false,
+    error: undefined as string | undefined,
+    formValues: undefined,
+  };
   const [state, formAction, isPending] = useActionState(createCourse, initialState);
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -43,12 +47,16 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
   const [selectedFileName, setSelectedFileName] = useState<string>('선택된 이미지가 없습니다.');
   const [durationMinutes, setDurationMinutes] = useState<number>(60);
 
+  const formValues = state?.formValues;
+  const effectiveDuration = formValues?.duration_minutes ?? durationMinutes;
+
   useEffect(() => {
     if (state?.success) {
       router.refresh();
       onClose();
     }
   }, [state?.success, onClose, router]);
+
 
   useEffect(() => {
     return () => {
@@ -99,11 +107,16 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
             <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
                 <label className="text-sm font-medium text-slate-700">수업명</label>
-                <Input name="title" placeholder="예: 중등 수학 심화" required />
+                <Input
+                  name="title"
+                  placeholder="예: 중등 수학 심화"
+                  defaultValue={formValues?.title ?? ''}
+                  required
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700">과목</label>
-                <Select name="subject" defaultValue="" required>
+                <Select name="subject" defaultValue={formValues?.subject ?? ''} required>
                   <option value="" disabled>
                     과목을 선택해주세요
                   </option>
@@ -116,18 +129,29 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700">학년 범위</label>
-                <Input name="grade_range" placeholder="중1-중3" required />
+                <Input
+                  name="grade_range"
+                  placeholder="중1-중3"
+                  defaultValue={formValues?.grade_range ?? ''}
+                  required
+                />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-sm font-medium text-slate-700">정원</label>
-                  <Input name="capacity" type="number" min={1} defaultValue={4} required />
+                  <Input
+                    name="capacity"
+                    type="number"
+                    min={1}
+                    defaultValue={formValues?.capacity ?? 4}
+                    required
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-700">수업 시간(분)</label>
                   <Select
                     name="duration_minutes"
-                    value={durationMinutes.toString()}
+                    value={String(effectiveDuration)}
                     onChange={(event) => setDurationMinutes(Number(event.target.value))}
                   >
                     <option value="60">60분</option>
@@ -142,13 +166,19 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
                   rows={3}
                   placeholder="수업 목표, 수업 방식 등 간단한 소개를 적어주세요."
                   className="w-full rounded-md border border-slate-200 px-3 py-2 focus:outline-[var(--primary)]"
+                  defaultValue={formValues?.description ?? ''}
                 />
                 <p className="mt-1 text-xs text-slate-500">수업 목록과 학생 페이지에 표시됩니다.</p>
               </div>
             </CardContent>
           </Card>
 
-          <CourseScheduleFields instructors={instructors} durationMinutes={durationMinutes} />
+          <CourseScheduleFields
+            instructors={instructors}
+            durationMinutes={effectiveDuration}
+            initialWeeks={formValues?.weeks}
+            initialWindows={formValues?.time_windows}
+          />
 
           <Card className="md:col-span-2">
             <CardHeader>

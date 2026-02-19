@@ -346,7 +346,7 @@ export default function SignupPage() {
 			// }
 
 			setMessage('회원가입이 완료되었습니다.');
-			router.push('/auth/login');
+			router.push('/auth/signup/complete');
 		} catch (err) {
 			console.error(err);
 			const unexpectedErrorMessage =
