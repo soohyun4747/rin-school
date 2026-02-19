@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createCourse } from "@/app/actions/admin";
@@ -19,6 +19,7 @@ interface Props {
 
 export function CourseCreateModal({ instructors }: Props) {
   const [open, setOpen] = useState(false);
+
 
   return (
     <>
@@ -48,11 +49,14 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
   const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
   const [subject, setSubject] = useState<string | null>(null);
   const [weeks, setWeeks] = useState<number | null>(null);
+  const [submittedDuration, setSubmittedDuration] = useState<number | null>(null);
+  const [submittedWeeks, setSubmittedWeeks] = useState<number | null>(null);
 
   const formValues = state?.formValues;
-  const effectiveDuration = durationMinutes ?? formValues?.duration_minutes ?? 60;
+  const effectiveDuration =
+    durationMinutes ?? submittedDuration ?? formValues?.duration_minutes ?? 60;
   const effectiveSubject = subject ?? formValues?.subject ?? '';
-  const effectiveWeeks = weeks ?? formValues?.weeks;
+  const effectiveWeeks = weeks ?? submittedWeeks ?? formValues?.weeks;
 
   useEffect(() => {
     if (state?.success) {
@@ -69,6 +73,15 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
       }
     };
   }, [previewUrl]);
+
+  const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+    const data = new FormData(event.currentTarget);
+    const duration = Number(data.get('duration_minutes') ?? 60);
+    const weeksValue = Number(data.get('weeks') ?? 1);
+
+    setSubmittedDuration(Number.isNaN(duration) ? 60 : duration);
+    setSubmittedWeeks(Number.isNaN(weeksValue) ? 1 : weeksValue);
+  };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -103,7 +116,11 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
       </div>
 
       <div className="p-5">
-        <form action={formAction} className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <form
+          action={formAction}
+          onSubmit={handleFormSubmit}
+          className="grid grid-cols-1 gap-3 md:grid-cols-2"
+        >
           <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle>기본 정보</CardTitle>
