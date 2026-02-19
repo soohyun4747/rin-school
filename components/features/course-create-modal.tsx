@@ -45,10 +45,14 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFileName, setSelectedFileName] = useState<string>('선택된 이미지가 없습니다.');
-  const [durationMinutes, setDurationMinutes] = useState<number>(60);
+  const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
+  const [subject, setSubject] = useState<string | null>(null);
+  const [weeks, setWeeks] = useState<number | null>(null);
 
   const formValues = state?.formValues;
-  const effectiveDuration = formValues?.duration_minutes ?? durationMinutes;
+  const effectiveDuration = durationMinutes ?? formValues?.duration_minutes ?? 60;
+  const effectiveSubject = subject ?? formValues?.subject ?? '';
+  const effectiveWeeks = weeks ?? formValues?.weeks;
 
   useEffect(() => {
     if (state?.success) {
@@ -116,7 +120,12 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700">과목</label>
-                <Select name="subject" defaultValue={formValues?.subject ?? ''} required>
+                <Select
+                  name="subject"
+                  value={effectiveSubject}
+                  onChange={(event) => setSubject(event.target.value)}
+                  required
+                >
                   <option value="" disabled>
                     과목을 선택해주세요
                   </option>
@@ -176,6 +185,8 @@ function CourseCreateForm({ instructors, onClose }: Props & { onClose: () => voi
           <CourseScheduleFields
             instructors={instructors}
             durationMinutes={effectiveDuration}
+            weeksValue={effectiveWeeks}
+            onWeeksChange={setWeeks}
             initialWeeks={formValues?.weeks}
             initialWindows={formValues?.time_windows}
           />

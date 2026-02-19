@@ -15,6 +15,8 @@ const maxDayMinute = 23 * 60 + 59;
 interface Props {
 	instructors: InstructorOption[];
 	durationMinutes: number;
+	weeksValue?: number;
+	onWeeksChange?: (weeks: number) => void;
 	initialWeeks?: number;
 	initialWindows?: EditableTimeWindow[];
 }
@@ -32,6 +34,8 @@ const formatMinutesToTime = (minutes: number) => {
 export function CourseScheduleFields({
 	instructors,
 	durationMinutes,
+	weeksValue,
+	onWeeksChange,
 	initialWeeks,
 	initialWindows,
 }: Props) {
@@ -174,7 +178,8 @@ export function CourseScheduleFields({
 					</label>
 					<Select
 						name='weeks'
-						defaultValue={(initialWeeks ?? weekOptions[0]).toString()}>
+						value={String(weeksValue ?? initialWeeks ?? weekOptions[0])}
+						onChange={(event) => onWeeksChange?.(Number(event.target.value))}>
 						{weekOptions.map((week) => (
 							<option key={week} value={week}>
 								{week}주 과정
