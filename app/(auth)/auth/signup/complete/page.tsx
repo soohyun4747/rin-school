@@ -12,7 +12,7 @@ export default function SignupCompletePage() {
         </CardHeader>
         <CardContent className='space-y-3'>
           <p className='text-sm text-slate-600'>아래 버튼을 눌러 로그인 페이지로 이동해주세요.</p>
-          <Button asChild className='w-full'>
+          <Button aschild className='w-full'>
             <Link href='/auth/login'>로그인하러가기</Link>
           </Button>
         </CardContent>
