@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChangeEvent, Dispatch, FormEvent, SetStateAction } from "react";
+import type { ChangeEvent, Dispatch, SetStateAction } from "react";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createCourse } from "@/app/actions/admin";
@@ -18,15 +18,17 @@ interface Props {
 }
 
 interface FormDraftValues {
-  durationMinutes: number | null;
-  weeks: number | null;
+  subject: string;
+  durationMinutes: number;
+  weeks: number;
 }
 
 export function CourseCreateModal({ instructors }: Props) {
   const [open, setOpen] = useState(false);
   const [draftValues, setDraftValues] = useState<FormDraftValues>({
-    durationMinutes: null,
-    weeks: null,
+    subject: "",
+    durationMinutes: 60,
+    weeks: 1,
   });
 
   return (
@@ -68,13 +70,7 @@ function CourseCreateForm({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFileName, setSelectedFileName] = useState<string>('선택된 이미지가 없습니다.');
-  const [subject, setSubject] = useState<string | null>(null);
-
   const formValues = state?.formValues;
-  const effectiveDuration =
-    draftValues.durationMinutes ?? formValues?.duration_minutes ?? 60;
-  const effectiveSubject = subject ?? formValues?.subject ?? '';
-  const effectiveWeeks = draftValues.weeks ?? formValues?.weeks;
 
   useEffect(() => {
     if (state?.success) {
@@ -91,18 +87,6 @@ function CourseCreateForm({
       }
     };
   }, [previewUrl]);
-
-  const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
-    const data = new FormData(event.currentTarget);
-    const duration = Number(data.get('duration_minutes') ?? 60);
-    const weeksValue = Number(data.get('weeks') ?? 1);
-
-    setDraftValues((prev) => ({
-      ...prev,
-      durationMinutes: Number.isNaN(duration) ? 60 : duration,
-      weeks: Number.isNaN(weeksValue) ? 1 : weeksValue,
-    }));
-  };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -139,7 +123,6 @@ function CourseCreateForm({
       <div className="p-5">
         <form
           action={formAction}
-          onSubmit={handleFormSubmit}
           className="grid grid-cols-1 gap-3 md:grid-cols-2"
         >
           <Card className="md:col-span-2">
@@ -160,8 +143,10 @@ function CourseCreateForm({
                 <label className="text-sm font-medium text-slate-700">과목</label>
                 <Select
                   name="subject"
-                  value={effectiveSubject}
-                  onChange={(event) => setSubject(event.target.value)}
+                  value={draftValues.subject}
+                  onChange={(event) =>
+                    setDraftValues((prev) => ({ ...prev, subject: event.target.value }))
+                  }
                   required
                 >
                   <option value="" disabled>
@@ -198,7 +183,7 @@ function CourseCreateForm({
                   <label className="text-sm font-medium text-slate-700">수업 시간(분)</label>
                   <Select
                     name="duration_minutes"
-                    value={String(effectiveDuration)}
+                    value={String(draftValues.durationMinutes)}
                     onChange={(event) =>
                       setDraftValues((prev) => ({
                         ...prev,
@@ -227,8 +212,8 @@ function CourseCreateForm({
 
           <CourseScheduleFields
             instructors={instructors}
-            durationMinutes={effectiveDuration}
-            weeksValue={effectiveWeeks}
+            durationMinutes={draftValues.durationMinutes}
+            weeksValue={draftValues.weeks}
             onWeeksChange={(value) =>
               setDraftValues((prev) => ({ ...prev, weeks: value }))
             }
