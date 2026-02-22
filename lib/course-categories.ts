@@ -12,7 +12,7 @@ export const COURSE_CATEGORIES = [
 
 export type CourseCategory = (typeof COURSE_CATEGORIES)[number];
 
-export const COURSE_CATEGORY_TABS = ['전체', ...COURSE_CATEGORIES] as const;
+export const COURSE_CATEGORY_TABS = [...COURSE_CATEGORIES] as const;
 
 export type CourseCategoryTab = (typeof COURSE_CATEGORY_TABS)[number];
 

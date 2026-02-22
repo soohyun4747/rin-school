@@ -13,7 +13,7 @@ export default async function ClassesPage() {
 		)
 		.order('display_order', { ascending: false, nullsLast: true })
 		.order('created_at', { ascending: false })
-		.limit(12);
+		// .limit(12);
 
 	const courseList = courses ?? [];
 
