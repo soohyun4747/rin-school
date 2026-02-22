@@ -28,10 +28,9 @@ type Props = {
 };
 
 export function CourseCategoryCourseList({ courses }: Props) {
-	const [activeTab, setActiveTab] = useState<CourseCategoryTab>('전체');
+	const [activeTab, setActiveTab] = useState<CourseCategoryTab>('수학');
 
 	const filteredCourses = useMemo(() => {
-		if (activeTab === '전체') return courses;
 		return courses.filter(
 			(course) => normalizeCourseCategory(course.subject) === activeTab
 		);
