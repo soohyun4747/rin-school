@@ -274,7 +274,7 @@ export default function SignupPage() {
 							age_confirmed: ageConfirmed,
 							guardian_eamil: null,
 							guardian_status: 'not_required',
-							guardian_token: null
+							guardian_token: null,
 							// guardian_email: ageConfirmed
 							// 	? null
 							// 	: trimmedGuardianEmail,
@@ -413,6 +413,10 @@ export default function SignupPage() {
 								type='email'
 								required
 							/>
+							<p className='text-xs pt-1'>
+								* 다자녀 가정의 경우에도 학생마다 개별 이메일로
+								회원가입이 필요합니다
+							</p>
 						</div>
 						<div>
 							<label className='text-sm font-medium text-slate-700'>
