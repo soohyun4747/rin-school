@@ -28,6 +28,7 @@ export function SiteHeaderClient({
 
 	const mainLinks: MenuItem[] = [
 		{ href: '/', label: '홈' },
+		{ href: '/contact', label: '문의하기' },
 		{ href: '/classes', label: '수업' },
 	];
 
@@ -79,7 +80,9 @@ export function SiteHeaderClient({
 				</div>
 				<div className='hidden items-center justify-end gap-3 text-sm text-slate-700 md:flex'>
 					{isLoggedIn && profileName && (
-						<span className='text-sm font-medium text-slate-700'>{profileName}님</span>
+						<span className='text-sm font-medium text-slate-700'>
+							{profileName}님
+						</span>
 					)}
 					{isLoggedIn ? (
 						<form action={logout}>
