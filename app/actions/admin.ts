@@ -1098,6 +1098,62 @@ export async function addStudentToMatch(courseId: string, formData: FormData) {
 	revalidatePath(`/admin/courses/${courseId}`);
 }
 
+export async function addStudentToCourseApplicants(
+	courseId: string,
+	formData: FormData
+) {
+	const { profile } = await requireSession();
+	requireRole(profile.role, ['admin']);
+	const supabase = await getSupabaseServerClient();
+
+	const studentId = String(formData.get('student_id') ?? '');
+	if (!studentId) {
+		throw new Error('학생을 선택해주세요.');
+	}
+
+	const [{ data: course }, { data: studentProfile }] = await Promise.all([
+		supabase.from('courses').select('id').eq('id', courseId).single(),
+		supabase
+			.from('profiles')
+			.select('id, role')
+			.eq('id', studentId)
+			.single(),
+	]);
+
+	if (!course) {
+		throw new Error('수업 정보를 찾을 수 없습니다.');
+	}
+	if (!studentProfile || studentProfile.role !== 'student') {
+		throw new Error('학생 계정만 추가할 수 있습니다.');
+	}
+
+	const { data: existingApplication } = await supabase
+		.from('applications')
+		.select('id, status')
+		.eq('course_id', courseId)
+		.eq('student_id', studentId)
+		.order('created_at', { ascending: false })
+		.limit(1)
+		.maybeSingle();
+
+	if (existingApplication) {
+		if (existingApplication.status !== 'cancelled') {
+			throw new Error('이미 신청자 목록에 있는 학생입니다.');
+		}
+
+		await supabase
+			.from('applications')
+			.update({ status: 'pending', created_at: new Date().toISOString() })
+			.eq('id', existingApplication.id);
+	} else {
+		await supabase
+			.from('applications')
+			.insert({ course_id: courseId, student_id: studentId, status: 'pending' });
+	}
+
+	revalidatePath(`/admin/courses/${courseId}`);
+}
+
 export async function confirmMatchSchedule(courseId: string, matchId: string) {
 	const { profile } = await requireSession();
 	requireRole(profile.role, ['admin']);

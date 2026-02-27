@@ -153,9 +153,9 @@ export async function GET() {
 		return NextResponse.json({ error: '수업 조회에 실패했습니다.' }, { status: 500 });
 	}
 
-	const courses = ((allCourses ?? []) as CourseRow[]).filter((course) => !course.is_closed);
+	const courses = (allCourses ?? []) as CourseRow[];
 	if (courses.length === 0) {
-		return NextResponse.json({ error: '다운로드할 진행 중 수업이 없습니다.' }, { status: 400 });
+		return NextResponse.json({ error: '다운로드할 수업이 없습니다.' }, { status: 400 });
 	}
 
 	const { data: allApplications, error: applicationsError } = await supabase
