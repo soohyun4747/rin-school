@@ -8,6 +8,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { formatDateTime, formatDayTime, trimSeconds } from '@/lib/time';
 import {
 	addStudentToMatch,
+	addStudentToCourseApplicants,
 	removeStudentFromMatch,
 	deleteMatchSchedule,
 } from '@/app/actions/admin';
@@ -76,6 +77,7 @@ export default async function AdminCourseDetailPage({
 		{ data: applications },
 		{ data: matches },
 		{ data: instructors },
+		{ data: students },
 	] = await Promise.all([
 		supabase
 			.from('course_time_windows')
@@ -103,6 +105,11 @@ export default async function AdminCourseDetailPage({
 			.from('profiles')
 			.select('id, name, email')
 			.eq('role', 'instructor')
+			.order('name', { ascending: true }),
+		supabase
+			.from('profiles')
+			.select('id, name')
+			.eq('role', 'student')
 			.order('name', { ascending: true }),
 	]);
 
@@ -184,6 +191,17 @@ export default async function AdminCourseDetailPage({
 		id,
 		name: profileMap.get(id)?.name ?? id,
 	}));
+	const activeApplicantIds = new Set(
+		applicationRows
+			.filter((app) => app.status !== 'cancelled')
+			.map((app) => app.student_id),
+	);
+	const addableApplicants = (students ?? [])
+		.filter((student) => !activeApplicantIds.has(student.id))
+		.map((student) => ({
+			id: student.id,
+			name: student.name ?? student.id,
+		}));
 
 	return (
 		<div className='space-y-6'>
@@ -460,6 +478,25 @@ export default async function AdminCourseDetailPage({
 					<CardTitle>신청자 목록</CardTitle>
 				</CardHeader>
 				<CardContent className='space-y-3 text-sm'>
+					<form
+						action={addStudentToCourseApplicants.bind(null, course.id)}
+						className='flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center'>
+						<Select name='student_id' className='sm:w-80' required>
+							<option value=''>신청자에 추가할 학생 선택</option>
+							{addableApplicants.map((student) => (
+								<option key={student.id} value={student.id}>
+									{student.name}
+								</option>
+							))}
+						</Select>
+						<Button
+							type='submit'
+							disabled={addableApplicants.length === 0}
+							className='sm:w-auto'>
+							학생 직접 추가
+						</Button>
+					</form>
+
 					{applicationRows.length === 0 && (
 						<p className='text-slate-600'>
 							아직 신청자가 없습니다.
