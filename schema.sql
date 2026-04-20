@@ -58,6 +58,7 @@ create table if not exists courses (
   duration_minutes int not null default 60,
   capacity int not null default 4,
   is_closed boolean not null default false,
+  is_hidden boolean not null default false,
   image_url text,
   created_by uuid references profiles(id),
   created_at timestamptz not null default now()

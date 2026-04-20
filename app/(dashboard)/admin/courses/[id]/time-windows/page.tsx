@@ -34,7 +34,7 @@ export default async function CourseTimeWindowsPage({
         const { data } = await supabase
                 .from('courses')
                 .select(
-                        'id, title, subject, grade_range, description, duration_minutes, capacity, image_url, weeks, is_closed'
+                        'id, title, subject, grade_range, description, duration_minutes, capacity, image_url, weeks, is_closed, is_hidden'
                 )
                 .eq('id', id) // ✅ params.id 대신 id
                 .single();

@@ -30,7 +30,7 @@ export default async function StudentCourseDetail({
 	const { data } = await supabase
 		.from('courses')
 		.select(
-			'id, title, subject, grade_range, description, duration_minutes, capacity, image_url, weeks, is_closed',
+			'id, title, subject, grade_range, description, duration_minutes, capacity, image_url, weeks, is_closed, is_hidden',
 		)
 		.eq('id', id)
 		.single();
@@ -39,7 +39,7 @@ export default async function StudentCourseDetail({
 
 	const course: ICourse = data;
 
-	if (course.is_closed) {
+	if (course.is_closed || course.is_hidden) {
 		redirect(`${origin}/classes`);
 	}
 

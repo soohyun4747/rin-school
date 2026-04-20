@@ -63,7 +63,7 @@ export default async function AdminCourseDetailPage({
 	const { data: courseData } = await supabase
 		.from('courses')
 		.select(
-			'id, title, subject, grade_range, description, duration_minutes, capacity, image_url, weeks, is_closed',
+			'id, title, subject, grade_range, description, duration_minutes, capacity, image_url, weeks, is_closed, is_hidden',
 		)
 		.eq('id', id)
 		.single();
@@ -76,6 +76,7 @@ export default async function AdminCourseDetailPage({
 		{ data: applications },
 		{ data: matches },
 		{ data: instructors },
+		{ data: allStudents },
 	] = await Promise.all([
 		supabase
 			.from('course_time_windows')
@@ -103,6 +104,11 @@ export default async function AdminCourseDetailPage({
 			.from('profiles')
 			.select('id, name, email')
 			.eq('role', 'instructor')
+			.order('name', { ascending: true }),
+		supabase
+			.from('profiles')
+			.select('id, name, phone, birthdate, email')
+			.eq('role', 'student')
 			.order('name', { ascending: true }),
 	]);
 
@@ -302,6 +308,7 @@ export default async function AdminCourseDetailPage({
 					windows={windowsRows}
 					applications={applicationRows}
 					profiles={profiles ?? []}
+					allStudents={allStudents ?? []}
 					instructors={instructorRows}
 				/>
 			</Card>

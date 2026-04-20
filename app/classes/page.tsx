@@ -9,8 +9,9 @@ export default async function ClassesPage() {
 	const { data: courses, error } = await supabase
 		.from('courses')
 		.select(
-			'id, title, subject, grade_range, description, image_url, is_closed'
+			'id, title, subject, grade_range, description, image_url, is_closed, is_hidden'
 		)
+		.eq('is_hidden', false)
 		.order('display_order', { ascending: false, nullsLast: true })
 		.order('created_at', { ascending: false })
 		// .limit(12);

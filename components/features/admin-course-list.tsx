@@ -7,6 +7,7 @@ import {
 	deleteCourse,
 	reorderCourses,
 	updateCourseClosed,
+	updateCourseHidden,
 } from '@/app/actions/admin';
 import type { ICourse } from '@/app/(dashboard)/admin/courses/page';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +50,7 @@ export function AdminCourseList({ courses }: CourseListProps) {
 	const [hasChanges, setHasChanges] = useState(false);
 	const [status, setStatus] = useState<StatusMessage | null>(null);
 	const [closingCourseId, setClosingCourseId] = useState<string | null>(null);
+	const [hidingCourseId, setHidingCourseId] = useState<string | null>(null);
 	const [deletingCourseId, setDeletingCourseId] = useState<string | null>(
 		null,
 	);
@@ -207,6 +209,38 @@ export function AdminCourseList({ courses }: CourseListProps) {
 		});
 	};
 
+	const handleToggleHidden = (courseId: string, nextHidden: boolean) => {
+		setHidingCourseId(courseId);
+		startTransition(async () => {
+			const result = await updateCourseHidden(courseId, nextHidden);
+
+			if (!result?.success) {
+				setStatus({
+					type: 'error',
+					message:
+						result?.error ?? '수업 숨김 상태를 변경하지 못했습니다.',
+				});
+				setHidingCourseId(null);
+				return;
+			}
+
+			setCurrentCourses((prev) =>
+				prev.map((course) =>
+					course.id === courseId
+						? { ...course, is_hidden: nextHidden }
+						: course,
+				),
+			);
+			setStatus({
+				type: 'success',
+				message: nextHidden
+					? '수업을 숨겼습니다.'
+					: '수업 숨김을 해제했습니다.',
+			});
+			setHidingCourseId(null);
+		});
+	};
+
 	if (currentCourses.length === 0) {
 		return (
 			<p className='text-sm text-slate-600'>등록된 수업이 없습니다.</p>
@@ -356,6 +390,11 @@ export function AdminCourseList({ courses }: CourseListProps) {
 														신청 마감
 													</Badge>
 												)}
+												{course.is_hidden && (
+													<Badge variant='danger'>
+														숨김
+													</Badge>
+												)}
 											</div>
 											<p className='text-sm text-slate-600'>
 												{course.subject} ·{' '}
@@ -399,6 +438,25 @@ export function AdminCourseList({ courses }: CourseListProps) {
 											: '삭제'}
 									</Button>
 								</form>
+								<Button
+									type='button'
+									variant={
+										course.is_hidden ? 'outline' : 'secondary'
+									}
+									onClick={() =>
+										handleToggleHidden(
+											course.id,
+											!course.is_hidden,
+										)
+									}
+									disabled={
+										hidingCourseId === course.id ||
+										isPending
+									}>
+									{course.is_hidden
+										? '👁️ 숨김 해제'
+										: '🙈 숨기기'}
+								</Button>
 								<Button
 									type='button'
 									variant={

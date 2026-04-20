@@ -8,6 +8,7 @@ type CourseRow = {
 	title: string;
 	subject: string;
 	is_closed: boolean;
+	is_hidden: boolean;
 };
 
 type ApplicationRow = {
@@ -144,7 +145,7 @@ export async function GET() {
 
 	const { data: allCourses, error: coursesError } = await supabase
 		.from('courses')
-		.select('id, title, subject, is_closed')
+		.select('id, title, subject, is_closed, is_hidden')
 		.order('display_order', { ascending: false, nullsFirst: false })
 		.order('created_at', { ascending: false });
 
@@ -153,7 +154,9 @@ export async function GET() {
 		return NextResponse.json({ error: '수업 조회에 실패했습니다.' }, { status: 500 });
 	}
 
-	const courses = ((allCourses ?? []) as CourseRow[]).filter((course) => !course.is_closed);
+	const courses = ((allCourses ?? []) as CourseRow[]).filter(
+		(course) => !course.is_closed && !course.is_hidden
+	);
 	if (courses.length === 0) {
 		return NextResponse.json({ error: '다운로드할 진행 중 수업이 없습니다.' }, { status: 400 });
 	}

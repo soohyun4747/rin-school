@@ -4,6 +4,7 @@ import { requireSession, requireRole } from '@/lib/auth';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { CourseCreateModal } from '@/components/features/course-create-modal';
 import { AdminCourseList } from '@/components/features/admin-course-list';
+import { AdminCourseExportButton } from '@/components/features/admin-course-export-button';
 
 export interface ICourse {
         id: string;
@@ -18,6 +19,7 @@ export interface ICourse {
         image_url: string;
         display_order: number | null;
         is_closed: boolean;
+        is_hidden: boolean;
 }
 
 export default async function AdminCoursesPage() {
@@ -28,7 +30,7 @@ export default async function AdminCoursesPage() {
                 supabase
                         .from('courses')
                         .select(
-                                'id, title, subject, grade_range, description, capacity, duration_minutes, created_at, image_url, weeks, display_order, is_closed'
+                                'id, title, subject, grade_range, description, capacity, duration_minutes, created_at, image_url, weeks, display_order, is_closed, is_hidden'
                         )
                         .order('display_order', { ascending: false, nullsLast: true })
                         .order('created_at', { ascending: false }),
@@ -56,11 +58,7 @@ export default async function AdminCoursesPage() {
                                                 className='rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50'>
                                                 이메일 알림 관리
                                         </Link>
-                                        <Link
-                                                href='/admin/courses/export'
-                                                className='rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50'>
-                                                Excel 다운로드
-                                        </Link>
+                                        <AdminCourseExportButton />
                                         <CourseCreateModal instructors={instructors ?? []} />
                                 </div>
                         </div>

@@ -39,6 +39,14 @@ type ProfileRow = {
 	birthdate: string | null;
 };
 
+type StudentSearchRow = {
+	id: string;
+	name: string | null;
+	phone: string | null;
+	birthdate: string | null;
+	email: string | null;
+};
+
 type Props = {
 	course: {
 		id: string;
@@ -48,6 +56,7 @@ type Props = {
 	windows: WindowRow[];
 	applications: ApplicationRow[];
 	profiles: ProfileRow[];
+	allStudents: StudentSearchRow[];
 	instructors: InstructorOption[];
 };
 
@@ -90,6 +99,7 @@ export default function ScheduleProposalGenerator({
 	windows,
 	applications,
 	profiles,
+	allStudents,
 	instructors,
 }: Props) {
 	const router = useRouter();
@@ -127,11 +137,15 @@ export default function ScheduleProposalGenerator({
 	const [selectedStudents, setSelectedStudents] = useState<
 		Record<string, string>
 	>({});
+	const [searchKeywordByProposal, setSearchKeywordByProposal] = useState<
+		Record<string, string>
+	>({});
 	const [message, setMessage] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
 	const availabilityForStudent = (studentId: string) => {
 		const app = applicationByStudent.get(studentId);
+		if (!app) return '이 수업 미신청';
 		const choices = app?.application_time_choices ?? [];
 		const labels = choices.map((choice) => {
 			const window = windowMap.get(choice.window_id);
@@ -154,7 +168,7 @@ export default function ScheduleProposalGenerator({
 		return updated;
 	};
 
-	const studentOptions = useMemo(
+	const applicantStudentOptions = useMemo(
 		() =>
 			Array.from(
 				new Set(
@@ -167,6 +181,17 @@ export default function ScheduleProposalGenerator({
 				name: profileMap.get(id)?.name ?? id,
 			})),
 		[applications, profileMap],
+	);
+
+	const applicantStudentIds = useMemo(
+		() => new Set(applications.map((app) => app.student_id)),
+		[applications],
+	);
+
+	const nonApplicantStudentOptions = useMemo(
+		() =>
+			allStudents.filter((student) => !applicantStudentIds.has(student.id)),
+		[allStudents, applicantStudentIds],
 	);
 
 	const setProposals = (proposals: ScheduleProposal[]) => {
@@ -302,8 +327,7 @@ export default function ScheduleProposalGenerator({
 		);
 	};
 
-	const handleAddStudent = (key: string) => {
-		const studentId = selectedStudents[key];
+	const handleAddStudent = (key: string, studentId: string) => {
 		if (!studentId) {
 			setError('추가할 학생을 선택해주세요.');
 			return;
@@ -336,6 +360,14 @@ export default function ScheduleProposalGenerator({
 			}),
 		);
 		setError(null);
+		setSelectedStudents((prev) => ({
+			...prev,
+			[key]: '',
+		}));
+		setSearchKeywordByProposal((prev) => ({
+			...prev,
+			[key]: '',
+		}));
 	};
 
 	return (
@@ -380,7 +412,8 @@ export default function ScheduleProposalGenerator({
 						? (instructorMap.get(proposal.instructor_id)?.name ??
 							proposal.instructor_id)
 						: (proposal.instructor_name ?? '미지정');
-					const availableOptions = studentOptions.filter(
+					const availableApplicantOptions =
+						applicantStudentOptions.filter(
 						(option) =>
 							!proposal.studentIds.includes(option.id) &&
 							!editableProposals.some(
@@ -388,8 +421,25 @@ export default function ScheduleProposalGenerator({
 									p.key !== proposal.key &&
 									p.studentIds.includes(option.id),
 							),
-					);
-					return (
+						);
+					const keyword = (searchKeywordByProposal[proposal.key] ?? '').trim();
+						const availableSearchOptions = nonApplicantStudentOptions
+						.filter(
+							(option) =>
+								!proposal.studentIds.includes(option.id) &&
+								!editableProposals.some(
+									(p) =>
+										p.key !== proposal.key &&
+										p.studentIds.includes(option.id),
+								),
+						)
+						.filter((option) => {
+							if (!keyword) return false;
+							const haystack = `${option.name ?? ''} ${option.email ?? ''} ${option.phone ?? ''}`.toLowerCase();
+							return haystack.includes(keyword.toLowerCase());
+							})
+							.slice(0, 8);
+						return (
 						<div
 							key={proposal.key}
 							className='space-y-3 rounded-md border border-slate-200 bg-white p-4 shadow-sm'>
@@ -522,6 +572,13 @@ export default function ScheduleProposalGenerator({
 																가능 시간대:{' '}
 																{availability}
 															</span>
+															{!applicationByStudent.has(
+																studentId,
+															) && (
+																<span className='text-[11px] font-semibold text-amber-700'>
+																	이 수업 미신청 학생
+																</span>
+															)}
 														</div>
 														<div className='flex gap-2'>
 															<Button
@@ -554,8 +611,8 @@ export default function ScheduleProposalGenerator({
 											[proposal.key]: e.target.value,
 										}))
 									}>
-									<option value=''>학생 추가</option>
-									{availableOptions.map((student) => (
+									<option value=''>신청 학생 추가</option>
+									{availableApplicantOptions.map((student) => (
 										<option
 											key={student.id}
 											value={student.id}>
@@ -566,11 +623,66 @@ export default function ScheduleProposalGenerator({
 								<Button
 									variant='outline'
 									onClick={() =>
-										handleAddStudent(proposal.key)
+										handleAddStudent(
+											proposal.key,
+											selectedStudents[proposal.key] ?? '',
+										)
 									}
-									disabled={availableOptions.length === 0}>
+									disabled={availableApplicantOptions.length === 0}>
 									학생 추가
 								</Button>
+							</div>
+							<div className='space-y-2 rounded-md border border-slate-100 bg-slate-50 p-3'>
+								<p className='text-xs font-semibold text-slate-700'>
+									미신청 학생 검색 추가
+								</p>
+								<input
+									type='search'
+									value={searchKeywordByProposal[proposal.key] ?? ''}
+									onChange={(e) =>
+										setSearchKeywordByProposal((prev) => ({
+											...prev,
+											[proposal.key]: e.target.value,
+										}))
+									}
+									placeholder='이름/이메일/연락처로 검색'
+									className='w-full rounded-md border border-slate-200 px-3 py-2 text-sm'
+								/>
+								{keyword && availableSearchOptions.length === 0 && (
+									<p className='text-xs text-slate-500'>
+										검색 결과가 없습니다.
+									</p>
+								)}
+								{availableSearchOptions.length > 0 && (
+									<ul className='space-y-2'>
+										{availableSearchOptions.map((student) => (
+											<li
+												key={student.id}
+												className='flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2'>
+												<div className='text-xs text-slate-700'>
+													<p className='font-semibold text-slate-900'>
+														{student.name ?? student.id}
+													</p>
+													<p>
+														{student.email ?? '이메일 없음'} ·{' '}
+														{student.phone ?? '연락처 없음'}
+													</p>
+												</div>
+												<Button
+													variant='outline'
+													size='sm'
+													onClick={() =>
+														handleAddStudent(
+															proposal.key,
+															student.id,
+														)
+													}>
+													추가
+												</Button>
+											</li>
+										))}
+									</ul>
+								)}
 							</div>
 							<div className='flex justify-end'>
 								<Button

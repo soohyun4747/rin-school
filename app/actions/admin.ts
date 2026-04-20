@@ -639,6 +639,34 @@ export async function updateCourseClosed(
 	return { success: true };
 }
 
+export async function updateCourseHidden(
+	courseId: string,
+	isHidden: boolean
+): Promise<CourseToggleResult> {
+	const { profile } = await requireSession();
+	requireRole(profile.role, ['admin']);
+	const supabase = await getSupabaseServerClient();
+
+	const { error } = await supabase
+		.from('courses')
+		.update({ is_hidden: isHidden })
+		.eq('id', courseId);
+
+	if (error) {
+		console.error('course toggle hidden error:', error);
+		return { success: false, error: '수업 숨김 상태 변경에 실패했습니다.' };
+	}
+
+	revalidatePath('/admin/courses');
+	revalidatePath(`/admin/courses/${courseId}`);
+	revalidatePath(`/admin/courses/${courseId}/time-windows`);
+	revalidatePath(`/admin/courses/${courseId}/edit`);
+	revalidatePath('/classes');
+	revalidatePath(`/classes/${courseId}`);
+
+	return { success: true };
+}
+
 export async function deleteCourse(courseId: string) {
 	const { profile } = await requireSession();
 	requireRole(profile.role, ['admin']);
