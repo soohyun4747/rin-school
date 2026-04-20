@@ -108,7 +108,7 @@ export default async function AdminCourseDetailPage({
 			.order('name', { ascending: true }),
 		supabase
 			.from('profiles')
-			.select('id, name')
+			.select('id, name, email, phone, birthdate, guardian_name')
 			.eq('role', 'student')
 			.order('name', { ascending: true }),
 	]);
@@ -196,11 +196,15 @@ export default async function AdminCourseDetailPage({
 			.filter((app) => app.status !== 'cancelled')
 			.map((app) => app.student_id),
 	);
-	const addableApplicants = (students ?? [])
+	const addableApplicants = (allStudents ?? [])
 		.filter((student) => !activeApplicantIds.has(student.id))
 		.map((student) => ({
 			id: student.id,
 			name: student.name ?? student.id,
+			email: student.email,
+			phone: student.phone,
+			birthdate: student.birthdate,
+			guardian_name: student.guardian_name
 		}));
 
 	return (

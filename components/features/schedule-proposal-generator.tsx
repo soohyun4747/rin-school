@@ -645,7 +645,7 @@ export default function ScheduleProposalGenerator({
 											[proposal.key]: e.target.value,
 										}))
 									}
-									placeholder='이름/이메일/연락처로 검색'
+									placeholder='이름/이메일로 검색'
 									className='w-full rounded-md border border-slate-200 px-3 py-2 text-sm'
 								/>
 								{keyword && availableSearchOptions.length === 0 && (
@@ -664,8 +664,9 @@ export default function ScheduleProposalGenerator({
 														{student.name ?? student.id}
 													</p>
 													<p>
-														{student.email ?? '이메일 없음'} ·{' '}
-														{student.phone ?? '연락처 없음'}
+														{student.email ?? ''}{' | '}
+														{student.birthdate ?? ''}{' | '}
+														{student.guardian_name ?? ''}
 													</p>
 												</div>
 												<Button
