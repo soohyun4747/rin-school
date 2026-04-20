@@ -108,11 +108,7 @@ export default async function AdminCourseDetailPage({
 			.order('name', { ascending: true }),
 		supabase
 			.from('profiles')
-<<<<<<< HEAD
-			.select('id, name, phone, birthdate, email')
-=======
 			.select('id, name')
->>>>>>> b141e37 (Add admin applicant add flow and include closed courses in export)
 			.eq('role', 'student')
 			.order('name', { ascending: true }),
 	]);
