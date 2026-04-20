@@ -158,7 +158,7 @@ export async function GET() {
 		(course) => !course.is_closed && !course.is_hidden
 	);
 	if (courses.length === 0) {
-		return NextResponse.json({ error: '다운로드할 진행 중 수업이 없습니다.' }, { status: 400 });
+		return NextResponse.json({ error: '다운로드할 수업이 없습니다.' }, { status: 400 });
 	}
 
 	const { data: allApplications, error: applicationsError } = await supabase
