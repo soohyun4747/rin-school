@@ -16,6 +16,7 @@ import type { ICourse } from '../page';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import ScheduleProposalGenerator from '@/components/features/schedule-proposal-generator';
+import StudentSearchPicker from '@/components/features/student-search-picker';
 import { statusMap } from '@/lib/utils';
 
 type ApplicationRow = {
@@ -485,15 +486,11 @@ export default async function AdminCourseDetailPage({
 				<CardContent className='space-y-3 text-sm'>
 					<form
 						action={addStudentToCourseApplicants.bind(null, course.id)}
-						className='flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center'>
-						<Select name='student_id' className='sm:w-80' required>
-							<option value=''>신청자에 추가할 학생 선택</option>
-							{addableApplicants.map((student) => (
-								<option key={student.id} value={student.id}>
-									{student.name}
-								</option>
-							))}
-						</Select>
+						className='flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-3'>
+						<StudentSearchPicker
+							inputName='student_id'
+							students={addableApplicants}
+						/>
 						<Button
 							type='submit'
 							disabled={addableApplicants.length === 0}
