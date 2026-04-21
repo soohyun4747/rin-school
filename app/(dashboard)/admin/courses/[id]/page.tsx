@@ -486,7 +486,7 @@ export default async function AdminCourseDetailPage({
 				<CardContent className='space-y-3 text-sm'>
 					<form
 						action={addStudentToCourseApplicants.bind(null, course.id)}
-						className='flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-3'>
+						className='flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-start'>
 						<StudentSearchPicker
 							inputName='student_id'
 							students={addableApplicants}
@@ -494,7 +494,7 @@ export default async function AdminCourseDetailPage({
 						<Button
 							type='submit'
 							disabled={addableApplicants.length === 0}
-							className='sm:w-auto'>
+							className='sm:mt-0.5 sm:w-auto'>
 							학생 직접 추가
 						</Button>
 					</form>
