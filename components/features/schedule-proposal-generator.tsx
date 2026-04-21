@@ -632,7 +632,7 @@ export default function ScheduleProposalGenerator({
 									학생 추가
 								</Button>
 							</div>
-							<div className='space-y-2 rounded-md border border-slate-100 bg-slate-50 p-3'>
+							{/* <div className='space-y-2 rounded-md border border-slate-100 bg-slate-50 p-3'>
 								<p className='text-xs font-semibold text-slate-700'>
 									미신청 학생 검색 추가
 								</p>
@@ -684,7 +684,7 @@ export default function ScheduleProposalGenerator({
 										))}
 									</ul>
 								)}
-							</div>
+							</div> */}
 							<div className='flex justify-end'>
 								<Button
 									variant='secondary'

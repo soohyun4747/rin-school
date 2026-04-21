@@ -97,7 +97,7 @@ export default function StudentSearchPicker({
 												</p>
 												<p className='text-xs text-slate-600'>
 													{student.email ?? '이메일 없음'} ·{' '}
-													{student.birthdate ?? '생년월일 없음'} · 보호자{' '}
+													{student.birthdate ?? '생년월일 없음'} ·{' '}
 													{student.guardian_name ?? '미입력'}
 												</p>
 											</div>
