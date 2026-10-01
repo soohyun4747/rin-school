@@ -29,7 +29,7 @@ export function SiteHeaderClient({
 	const mainLinks: MenuItem[] = [
 		{ href: '/', label: '홈' },
 		{ href: '/contact', label: '문의하기' },
-		{ href: 'https://rinapply.netlify.app/#step1', label: '수강신청' },
+		{ href: 'https://apply.rinschool.com', label: '수강신청' },
 	];
 
 	return (
